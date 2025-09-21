@@ -1,0 +1,58 @@
+@startuml
+!include C4_Container.puml
+
+title C4 Container Diagram - Умные поселки
+
+Person(user, "Пользователь", "Домовладелец")
+
+System_Boundary(devices, "Группы устройств разного типа: \n отопление, ворота, видеонаблюдение и т.д.") {
+    System_Ext(sensors, "Датчики", "Физические устройства, отправляющие данные")
+    System_Ext(equipment, "Оборудование", "Умные устройства, которыми управляет пользователь")
+}
+
+System_Boundary(td, "Система «Тёплый дом»") {
+
+  Container(mobile, "Mobile/Web UI", "React Native / React JS", "Интерфейс управления домом")
+  Container(api, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+  Container(IoT_bus, "IoT Bus", "Yandex IoT Core", "Метрики и команды")
+
+  Container_Boundary(services, "Сервисы платформы") {
+    Container(deviceRegistry, "Device Registry", "SpringBoot", "Регистрация/управление устройствами")
+    ContainerDb(deviceDb, "Registry DB", "PostgreSQL", "Хранение данных об устройствах")
+
+    Container(telemetry, "Telemetry", "SpringBoot", "Приём и обработка метрик")
+    Container(deviceMan, "DeviceManagement", "SpringBoot", "Управление устройствами")
+    Container(deviceManDB, "Device Management DB", "PostgreSQL", "Хранение состояния устройств (цифровой двойник: desired + reported)")
+    ContainerDb(telemetryDb, "Telemetry DB", "PostgreSQL", "Хранение телеметрии")
+
+    Container(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
+  }
+
+}
+Rel(user, devices, "Сканирует QR для регистрации")
+
+Rel(user, mobile, "Использует", "HTTPS")
+Rel(mobile, api, "Вызовы API", "HTTPS")
+Rel(api, deviceRegistry, "CRUD операции", "HTTP/REST")
+Rel(api, telemetry, "Получение метрик", "HTTP/JSON")
+Rel(api, deviceMan, "Получение команд устройству", "HTTP/JSON")
+
+Rel(deviceRegistry, deviceDb, "Хранение устройств", "JDBC")
+Rel(deviceMan, deviceManDB, "Хранение состояния", "JDBC")
+Rel(telemetry, telemetryDb, "Хранение метрик", "JDBC")
+
+'' Подписчики на событие "Устройство зарегистрировано" - если расскомментировать, схема едет
+'' Rel(kafka, telemetry, "Слушает DeviceRegistered", "Topic: device.registered.v1")
+'' Rel(kafka, deviceMan, "Слушает DeviceRegistered", "Topic: device.registered.v1")
+Rel(deviceRegistry, kafka, "Публикует DeviceRegistered")
+Rel(telemetry, kafka, "Публикует TelemetryReported")
+Rel(deviceMan, kafka, "Публикует DeviceStateChanged")
+
+Rel(sensors, IoT_bus, "Публикует метрики", "MQTT")
+Rel(equipment, IoT_bus, "Публикует состояние", "MQTT")
+Rel(IoT_bus, telemetry, "Слушает Telemetry", "MQTT")
+Rel(deviceMan, IoT_bus, "Доставляет команды", "MQTT")
+Rel(IoT_bus, equipment, "Доставляет команды", "MQTT")
+Rel(IoT_bus, deviceMan, "Слушает состояние", "MQTT")
+
+@enduml
