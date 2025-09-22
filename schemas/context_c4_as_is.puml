@@ -1,5 +1,5 @@
 @startuml
-!include C4_Context.puml
+!include styles/C4_Context.puml
 LAYOUT_WITH_LEGEND()
 
 title C4: Диаграмма контекста — «Тёплый дом» (AS IS)

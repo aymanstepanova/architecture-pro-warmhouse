@@ -1,5 +1,5 @@
 @startuml
-!include C4_Container.puml
+!include styles/C4_Container.puml
 
 title C4 Container Diagram - Умные поселки
 
@@ -29,24 +29,24 @@ System_Boundary(td, "Система «Тёплый дом»") {
   }
 
 }
+
 Rel(user, devices, "Сканирует QR для регистрации")
 
 Rel(user, mobile, "Использует", "HTTPS")
 Rel(mobile, api, "Вызовы API", "HTTPS")
-Rel(api, deviceRegistry, "CRUD операции", "HTTP/REST")
+Rel(api, deviceRegistry, "CRD операции", "HTTP/REST")
 Rel(api, telemetry, "Получение метрик", "HTTP/JSON")
-Rel(api, deviceMan, "Получение команд устройству", "HTTP/JSON")
+Rel(api, deviceMan, "Изменение состояния устройства (команды)", "HTTP/JSON")
 
-Rel(deviceRegistry, deviceDb, "Хранение устройств", "JDBC")
-Rel(deviceMan, deviceManDB, "Хранение состояния", "JDBC")
-Rel(telemetry, telemetryDb, "Хранение метрик", "JDBC")
+Rel_L(deviceRegistry, deviceDb, "Хранение устройств", "JDBC")
+Rel_L(deviceMan, deviceManDB, "Хранение состояния", "JDBC")
+Rel_L(telemetry, telemetryDb, "Хранение метрик", "JDBC")
 
-'' Подписчики на событие "Устройство зарегистрировано" - если расскомментировать, схема едет
-'' Rel(kafka, telemetry, "Слушает DeviceRegistered", "Topic: device.registered.v1")
-'' Rel(kafka, deviceMan, "Слушает DeviceRegistered", "Topic: device.registered.v1")
-Rel(deviceRegistry, kafka, "Публикует DeviceRegistered")
-Rel(telemetry, kafka, "Публикует TelemetryReported")
-Rel(deviceMan, kafka, "Публикует DeviceStateChanged")
+Rel_D(deviceRegistry, kafka, "Публикует DeviceRegistered")
+Rel(kafka, telemetry, "Слушает DeviceRegistered", "Topic: device.registered.v1")
+Rel(kafka, deviceMan, "Слушает DeviceRegistered", "Topic: device.registered.v1")
+'' Rel(telemetry, kafka, "Публикует TelemetryReported")
+'' Rel(deviceMan, kafka, "Публикует DeviceStateChanged")
 
 Rel(sensors, IoT_bus, "Публикует метрики", "MQTT")
 Rel(equipment, IoT_bus, "Публикует состояние", "MQTT")

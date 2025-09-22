@@ -1,0 +1,35 @@
+@startuml
+!include styles/C4_Component.puml
+
+title C4 Component Diagram - "Реестр устройств"
+
+Component_Ext(apiGw, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+ComponentDb_Ext(deviceDb, "Registry DB", "PostgreSQL", "Хранение данных об устройствах")
+ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
+
+Container_Boundary(deviceRegistry, "Device Registry") {
+	Component(commandApi, "Device Command API", "Spring Bean\n<<RestController>>", "CREATE / DELETE")
+	Component(queryApi, "Device Query API", "Spring Bean\n<<RestController>>", "READ")
+    Component(service, "Device Service", "Spring Bean\n<<Service>>", "Бизнес-логика и валидация")
+    Component(repository, "Device Repository", "Spring Bean\n<<Repository>>", "Хранение и доступ к устройствам")
+    Component(eventProducer, "Event Producer", "Spring Bean\n<<Producer>>", "Публикация событий")
+}
+
+'' API
+Rel(apiGw, commandApi, "HTTP: CREATE/DELETE", "JSON/HTTPS")
+Rel(apiGw, queryApi, "HTTP: READ", "JSON/HTTPS")
+
+'' Команды
+Rel(commandApi, service, "Создать/Удалить устройство")
+Rel(queryApi, repository, "Прочитать устройство(а)")
+Rel(service, repository, "Сохранить/Удалить устройство")
+Rel(repository, deviceDb, "Хранение устройств", "JDBC")
+
+'' События
+Rel(service, eventProducer, "Сформировать событие")
+Rel(eventProducer, kafka, "Публикует\nDeviceRegistered", "Topic: device.registered.v1")
+Rel(eventProducer, kafka, "Публикует\nDeviceDeleted", "Topic: device.deleted.v1")
+
+@enduml
+
+
