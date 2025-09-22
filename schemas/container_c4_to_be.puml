@@ -14,7 +14,7 @@ System_Boundary(td, "Система «Тёплый дом»") {
 
   Container(mobile, "Mobile/Web UI", "React Native / React JS", "Интерфейс управления домом")
   Container(api, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
-  Container(IoT_bus, "IoT Bus", "Yandex IoT Core", "Метрики и команды")
+  ContainerQueue(IoT_bus, "IoT Bus", "Yandex IoT Core", "Метрики и команды")
 
   Container_Boundary(services, "Сервисы платформы") {
     Container(deviceRegistry, "Device Registry", "SpringBoot", "Регистрация/управление устройствами")
@@ -25,7 +25,7 @@ System_Boundary(td, "Система «Тёплый дом»") {
     Container(deviceManDB, "Device Management DB", "PostgreSQL", "Хранение состояния устройств (цифровой двойник: desired + reported)")
     ContainerDb(telemetryDb, "Telemetry DB", "PostgreSQL", "Хранение телеметрии")
 
-    Container(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
+    ContainerQueue(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
   }
 
 }
