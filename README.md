@@ -70,7 +70,9 @@
 
 **Диаграмма компонентов (Components)**
 
-Добавьте диаграмму для каждого из выделенных микросервисов.
+- [Диаграмма компонентов контейнера DeviceManagement](./schemas/component_device_management_c4.puml)
+- [Диаграмма компонентов контейнера Device Registry](./schemas/component_device_registry_c4.puml)
+- [Диаграмма компонентов контейнера Telemetry](./schemas/component_telemetry_c4.puml)
 
 **Диаграмма кода (Code)**
 
