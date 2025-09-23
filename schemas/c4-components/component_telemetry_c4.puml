@@ -1,5 +1,5 @@
 @startuml
-!include styles/C4_Component.puml
+!include ../styles/C4_Component.puml
 
 title C4 Component Diagram - "Телеметрия"
 

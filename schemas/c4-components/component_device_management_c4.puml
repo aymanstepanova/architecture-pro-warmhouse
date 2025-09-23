@@ -1,5 +1,5 @@
 @startuml
-!include styles/C4_Component.puml
+!include ../styles/C4_Component.puml
 
 title C4 Component Diagram - "Управление устройствами"
 
@@ -12,7 +12,7 @@ Container_Boundary(device_man, "DeviceManagement") {
 
     Component(producer, "IoT Producer", "Spring Bean\n<<Handler>>", "Публикация команд в IoT Bus")
     Component(consumer, "IoT Consumer", "Spring Bean\n<<Handler>>", "Подписка на события состояния из IoT Bus")
-    Component(stateProcessor, "IoT State Processor", "Spring Bean\n<<Service>>", "Обработка событий состояния из IoT Bus")
+    Component(stateProcessor, "State Processor", "Spring Bean\n<<Service>>", "Обработка событий состояния из IoT Bus")
 
     Component(eventConsumer, "Event Consumer", "Spring Bean\n<<Handler>>", "Подписка на события из Event Bus")
     Component(eventProcessor, "Event Processor", "Spring Bean\n<<Service>>", "Обработка событий из Event Bus")

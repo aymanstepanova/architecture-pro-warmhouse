@@ -70,9 +70,9 @@
 
 **Диаграмма компонентов (Components)**
 
-- [Диаграмма компонентов контейнера DeviceManagement](./schemas/component_device_management_c4.puml)
-- [Диаграмма компонентов контейнера Device Registry](./schemas/component_device_registry_c4.puml)
-- [Диаграмма компонентов контейнера Telemetry](./schemas/component_telemetry_c4.puml)
+- [Диаграмма компонентов контейнера DeviceManagement](schemas/c4-components/component_device_management_c4.puml)
+- [Диаграмма компонентов контейнера Device Registry](schemas/c4-components/component_device_registry_c4.puml)
+- [Диаграмма компонентов контейнера Telemetry](schemas/c4-components/component_telemetry_c4.puml)
 
 **Диаграмма кода (Code)**
 

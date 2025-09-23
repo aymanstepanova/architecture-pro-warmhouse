@@ -1,0 +1,82 @@
+@startuml
+title DeviceManagement - Classes (capability + hybrid desired)
+
+class Device {
+    - deviceId: String
+    - type: DeviceType
+    - desired: DesiredStateDoc
+    - reported: ReportedStateDoc
+    - status: DeviceStatus
+}
+
+class DeviceType {
+    + name: String
+    + version: int
+    + capabilities: Set<Capability>
+}
+
+interface Capability {
+    + id(): String
+    + validateDesired(section: Map): void
+    + mergeDesired(current: Map, patch: Map): Map
+    + toCommand(deviceId: String, section: Map): Command
+}
+
+class DesiredStateDoc {
+    + data: Map<String,Object> // секции по capability.id()
+    + schemaRef: String
+    + schemaVersion: int
+}
+
+class ReportedStateDoc {
+    + data: Map<String,Object>
+    + schemaRef: String
+    + schemaVersion: int
+}
+
+class Command {
+    - commandId: UUID
+    - type: CommandType
+    - payload: Map<String,Object>
+}
+
+class DeviceCommandController {
+    + patchDesired(deviceId: String, patch: Map): void
+}
+
+class CommandHandlerService {
+    + applyDesiredPatch(deviceId: String, patch: Map): void
+}
+
+class DeviceRepository {
+    + findByDeviceId(deviceId: String): Device
+    + save(device: Device): void
+}
+
+interface AuditLogRepository {
+    + append(entry: AuditEntry)
+}
+
+class AuditEntry {
+    - entityType: Type
+    - entityId: UUID
+    - action: ActionType
+    - actorId: String
+    - occured_at: Timestamp
+    - version: UUID
+    - diffJson: Json
+    - requestId: UUID
+}
+
+
+Device --> DeviceType
+Device --> DesiredStateDoc
+Device --> ReportedStateDoc
+DeviceRepository --> Device
+DeviceCommandController --> CommandHandlerService
+CommandHandlerService --> DeviceRepository
+CommandHandlerService --> Capability
+CommandHandlerService --> AuditLogRepository : (same TX)
+AuditLogRepository --> AuditEntry
+
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+title 3. Изменение состояния устройства
+
+actor Client
+participant "DeviceCommandController" as api
+participant "CommandHandler" as handler
+participant "DeviceRepository" as repo
+participant "IoTProducer" as iot
+
+Client -> api: PATCH /devices/{id}/commands \n{DesiredState{MODE}}
+api -> handler: handleSetDesired(deviceId, desiredState)
+handler -> repo: findByDeviceId(deviceId)
+repo --> handler: DeviceState(desired, reported, version)
+
+handler -> handler: validatePolicy()\ncheckIdempotency()
+handler -> repo: saveDesired(deviceId, value, version+1)
+repo --> handler: ok
+
+handler -> iot: publishCommand(deviceId, SetDesired(value), correlationId)
+
+api <-- handler: 202 Accepted {commandId}
+Client <-- api: 202 Accepted {commandId}
+
+@enduml

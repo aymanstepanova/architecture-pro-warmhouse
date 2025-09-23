@@ -1,0 +1,27 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Sequence.puml
+
+title 1. Регистрации устройства
+
+actor User
+participant "Web/Mobile\nUI" as ui
+participant "API \nGateway" as Api
+participant "Device Registry Service" as Registry
+database "Registry DB" as RegistryDb
+queue "Event Bus" as EventBus
+participant "Device Management Service" as Mgmt
+database "Device Management DB" as MgmtDb
+
+User -> ui : Нажимает "Зарегистрировать устройство"
+ui -> Api : registerDevice(deviceInfo)
+Api -> Registry : POST /devices
+Registry -> RegistryDb : INSERT new device
+RegistryDb --> Registry : OK
+Registry --> Api : 201 Created
+Api --> ui : Устройство зарегистрировано
+Registry -> EventBus : DeviceRegistered event
+EventBus -> Mgmt : DeviceRegistered
+Mgmt -> MgmtDb : INSERT device\nstatus=REGISTERED,\ndesired={}, reported={}
+MgmtDb --> Mgmt : OK
+
+@enduml
