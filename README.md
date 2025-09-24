@@ -76,11 +76,19 @@
 
 **Диаграмма кода (Code)**
 
-Добавьте одну диаграмму или несколько.
+1. [Регистрация](schemas/c4-code/1_sequence-registration.puml)
+![1_sequence-registration.png](schemas/c4-code/1_sequence-registration.png)
+2. [Актуализация состояния устройства](schemas/c4-code/3_sequence-changeState.puml)
+3. [Изменение состояния устройства](schemas/c4-code/2_sequence-applyReported.puml)
+![1_sequence-registration.png](schemas/c4-code/3_sequence-changeState.png)
 
+5. [Диаграмма классов контейнера DeviceManagement](schemas/c4-code/class-changeState.puml)
+
+![](schemas/c4-code/class-set-mode-DeviceManagement.png)
 # Задание 3. Разработка ER-диаграммы
 
-Добавьте сюда ER-диаграмму. Она должна отражать ключевые сущности системы, их атрибуты и тип связей между ними.
+[erd схема](schemas/erd.puml)
+![erd-system.png](schemas/erd-system.png)
 
 # Задание 4. Создание и документирование API
 

@@ -1,0 +1,119 @@
+@startuml
+
+skinparam linetype ortho
+title Тёплый дом — ER диаграмма (логическая модель)
+
+' === USERS & HOUSES ===
+entity "users" as USER {
+  * id: UUID <<PK>>
+  --
+  email: TEXT <<UNIQUE>>
+  name: TEXT
+  phone: TEXT?
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+
+entity "houses" as HOUSE {
+  * id: UUID <<PK>>
+  --
+  owner_user_id: UUID <<FK users.id>>  ' главный владелец
+  address_line: TEXT
+  city: TEXT
+  timezone: TEXT
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+
+' Доп. доступ пользователей к дому (много пользователей ↔ один дом)
+entity "user_house_access" as UHA {
+  * user_id:  UUID <<FK users.id>>
+  * house_id: UUID <<FK houses.id>>
+  --
+  role: TEXT        ' примеры: owner | member | guest
+  invited_at: timestamptz
+  accepted_at: timestamptz?
+  PRIMARY KEY (user_id, house_id)
+}
+
+' === DEVICE CATALOG ===
+entity "device_types" as DT {
+  * id: UUID <<PK>>
+  --
+  name: TEXT        ' примеры: Thermostat / Socket / Camera ...
+  vendor: TEXT?
+  model: TEXT?
+  fw_min_version: TEXT?
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+
+' Логические возможности/модули (capabilities/modules)
+entity "modules" as MOD {
+  * id: UUID <<PK>>
+  --
+  code: TEXT <<UNIQUE>>  ' примеры: heating, switch, light, camera
+  name: TEXT
+  description: TEXT?
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+
+' Совместимость типов устройств и модулей (каталог)
+entity "device_type_modules" as DTM {
+  * device_type_id: UUID <<FK device_types.id>>
+  * module_id:     UUID <<FK modules.id>>
+  --
+  PRIMARY KEY (device_type_id, module_id)
+}
+
+' === DEVICES (экземпляры в домах) ===
+entity "devices" as DEV {
+  * id: UUID <<PK>>                 ' device_id
+  --
+  type_id:  UUID <<FK device_types.id>>
+  house_id: UUID <<FK houses.id>>
+  serial_number: TEXT <<UNIQUE>>
+  nickname: TEXT?
+  status: TEXT          ' примеры: REGISTERED | ACTIVE | OFFLINE | REMOVED
+  desired_json: JSONB   ' желаемые параметры (по модулям)
+  reported_json: JSONB  ' фактические параметры (по модулям)
+  version: INT          ' optimistic locking
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+
+' Включённые модули у конкретного устройства (флаги/настройки)
+entity "device_modules" as DVM {
+  * device_id: UUID <<FK devices.id>>
+  * module_id: UUID <<FK modules.id>>
+  --
+  enabled: BOOLEAN
+  params_json: JSONB?   ' специфичные настройки модуля
+  PRIMARY KEY (device_id, module_id)
+}
+
+' === TELEMETRY ===
+entity "telemetry_data" as TLM {
+  * id: BIGSERIAL <<PK>>
+  --
+  device_id: UUID <<FK devices.id>>
+  metric_code: TEXT     ' примеры: temp, humidity, power, motion
+  value_json: JSONB     ' значение/объект
+  partition_ym: TEXT    ' YYYY-MM для партиционирования
+  received_at: timestamptz
+}
+
+' === RELATIONSHIPS ===
+USER ||--o{ HOUSE : "owner_user_id (1:N)"
+USER ||--o{ UHA   : ""
+HOUSE ||--o{ UHA  : ""
+HOUSE ||--o{ DEV  : "(1:N)"
+DT    ||--o{ DEV  : "(1:N)"
+DT    ||--o{ DTM  : ""
+MOD   ||--o{ DTM  : ""
+DEV   ||--o{ DVM  : ""
+MOD   ||--o{ DVM  : ""
+DEV   ||--o{ TLM  : "(1:N)"
+
+@enduml

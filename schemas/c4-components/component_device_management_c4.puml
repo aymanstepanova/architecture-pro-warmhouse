@@ -10,7 +10,7 @@ Container_Boundary(device_man, "DeviceManagement") {
     Component(commandHandler, "Command Handler", "Spring Bean\n<<Service>>", "Обработка команд (desired state + публикация)")
     Component(stateService, "State Service", "Spring Bean\n<<Service>>", "Предоставление состояния устройства (desired + reported)")
 
-    Component(producer, "IoT Producer", "Spring Bean\n<<Handler>>", "Публикация команд в IoT Bus")
+    Component(producer, "Command Publisher", "Spring Bean\n<<Handler>>", "Публикация команд в IoT Bus")
     Component(consumer, "IoT Consumer", "Spring Bean\n<<Handler>>", "Подписка на события состояния из IoT Bus")
     Component(stateProcessor, "State Processor", "Spring Bean\n<<Service>>", "Обработка событий состояния из IoT Bus")
 
