@@ -14,10 +14,22 @@ entity "users" as USER {
   updated_at: timestamptz
 }
 
+entity "settlements" as SET {
+  * id: UUID <<PK>>
+  --
+  name: TEXT            ' название посёлка/жилого комплекса
+  city: TEXT           
+  region: TEXT?
+  timezone: TEXT
+  created_at: timestamptz
+  updated_at: timestamptz
+}
+
 entity "houses" as HOUSE {
   * id: UUID <<PK>>
   --
   owner_user_id: UUID <<FK users.id>>  ' главный владелец
+  settlement_id: UUID <<FK settlements.id>>  ' посёлок, к которому относится дом
   address_line: TEXT
   city: TEXT
   timezone: TEXT
@@ -109,6 +121,7 @@ USER ||--o{ HOUSE : "owner_user_id (1:N)"
 USER ||--o{ UHA   : ""
 HOUSE ||--o{ UHA  : ""
 HOUSE ||--o{ DEV  : "(1:N)"
+SET   ||--o{ HOUSE: "(1:N)"
 DT    ||--o{ DEV  : "(1:N)"
 DT    ||--o{ DTM  : ""
 MOD   ||--o{ DTM  : ""

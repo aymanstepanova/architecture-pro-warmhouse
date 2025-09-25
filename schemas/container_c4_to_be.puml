@@ -25,6 +25,12 @@ System_Boundary(td, "Система «Тёплый дом»") {
     Container(deviceManDB, "Device Management DB", "PostgreSQL", "Хранение состояния устройств (цифровой двойник: desired + reported)")
     ContainerDb(telemetryDb, "Telemetry DB", "PostgreSQL", "Хранение телеметрии")
 
+    Container(access, "Access Service", "SpringBoot", "Аутентификация, пользователи, роли/политики, JWT")
+    ContainerDb(accessDb, "Access DB", "PostgreSQL", "Хранение ролевой модели системы")
+
+    Container(spaces, "Spaces Registry", "SpringBoot", "Управление иерархией пространств (поселки, дома, комнаты)")
+    ContainerDb(spacesDb, "Spaces DB", "PostgreSQL", "Хранение иерархии пространств (поселки, дома, комнаты)")
+
     ContainerQueue(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
   }
 
@@ -34,17 +40,23 @@ Rel(user, devices, "Сканирует QR для регистрации")
 
 Rel(user, mobile, "Использует", "HTTPS")
 Rel(mobile, api, "Вызовы API", "HTTPS")
+Rel(api, access, "Аутентификация, пользователи, роли, токены", "HTTP/REST")
+Rel(api, spaces, "Дома, членства, приглашения", "HTTP/REST")
 Rel(api, deviceRegistry, "CRD операции", "HTTP/REST")
 Rel(api, telemetry, "Получение метрик", "HTTP/JSON")
 Rel(api, deviceMan, "Изменение состояния устройства (команды)", "HTTP/JSON")
 
-Rel_L(deviceRegistry, deviceDb, "Хранение устройств", "JDBC")
-Rel_L(deviceMan, deviceManDB, "Хранение состояния", "JDBC")
-Rel_L(telemetry, telemetryDb, "Хранение метрик", "JDBC")
+Rel(deviceRegistry, deviceDb, "Хранение устройств", "JDBC")
+Rel(deviceMan, deviceManDB, "Хранение состояния", "JDBC")
+Rel(telemetry, telemetryDb, "Хранение метрик", "JDBC")
+Rel(access, accessDb, "Хранение ролевой модели системы", "JDBC")
+Rel(spaces, spacesDb, "Хранение домов, членств и приглашений", "JDBC")
 
-Rel_D(deviceRegistry, kafka, "Публикует DeviceRegistered")
-Rel(kafka, telemetry, "Слушает DeviceRegistered", "Topic: device.registered.v1")
-Rel(kafka, deviceMan, "Слушает DeviceRegistered", "Topic: device.registered.v1")
+Rel(deviceRegistry, kafka, "Публикует DeviceRegistered")
+'' Rel(access, kafka, "Публикует UserRegistered")
+'' Rel(spaces, kafka, "Публикует HouseCreated, MemberInvited, InvitationAccepted")
+Rel(telemetry, kafka, "Слушает DeviceRegistered", "Topic: device.registered.v1")
+Rel(deviceMan, kafka, "Слушает DeviceRegistered", "Topic: device.registered.v1")
 '' Rel(telemetry, kafka, "Публикует TelemetryReported")
 '' Rel(deviceMan, kafka, "Публикует DeviceStateChanged")
 

@@ -4,13 +4,18 @@
 title C4 Component Diagram - "Реестр устройств"
 
 Component_Ext(apiGw, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+System_Ext(access, "Access System", "Проверка JWT, ролей, прав доступа")
 ComponentDb_Ext(deviceDb, "Registry DB", "PostgreSQL", "Хранение данных об устройствах")
 ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
 
 Container_Boundary(deviceRegistry, "Device Registry") {
 	Component(commandApi, "Device Command API", "Spring Bean\n<<RestController>>", "CREATE / DELETE")
 	Component(queryApi, "Device Query API", "Spring Bean\n<<RestController>>", "READ")
-    Component(service, "Device Service", "Spring Bean\n<<Service>>", "Бизнес-логика и валидация")
+	Boundary(serviceLayer, "Сервисный слой") {
+	    Component(queryService, "Device Query Service", "Spring Bean\n<<Service>>", "Бизнес-логика и валидация")
+        Component(service, "Device Service", "Spring Bean\n<<Service>>", "Бизнес-логика и валидация")
+	}
+	Component(policyClient, "Policy Client", "Spring Bean", "Запросы на проверку прав к Access Service")
     Component(repository, "Device Repository", "Spring Bean\n<<Repository>>", "Хранение и доступ к устройствам")
     Component(eventProducer, "Event Producer", "Spring Bean\n<<Producer>>", "Публикация событий")
 }
@@ -21,7 +26,11 @@ Rel(apiGw, queryApi, "HTTP: READ", "JSON/HTTPS")
 
 '' Команды
 Rel(commandApi, service, "Создать/Удалить устройство")
-Rel(queryApi, repository, "Прочитать устройство(а)")
+Rel(queryApi, queryService, "Прочитать устройство(а)")
+Rel(queryService, repository, "Прочитать устройство(а)")
+Rel(queryService, policyClient, "Проверить есть ли у пользователя доступ к устройству")
+Rel(service, policyClient, "Проверить права пользователя в доме/ \nдоступ к устройству")
+Rel(policyClient, access, "Проверить JWT и получить права пользователя (дома и роли в них)", "HTTP")
 Rel(service, repository, "Сохранить/Удалить устройство")
 Rel(repository, deviceDb, "Хранение устройств", "JDBC")
 

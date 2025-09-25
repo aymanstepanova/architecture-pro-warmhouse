@@ -1,0 +1,48 @@
+@startuml
+!include ../styles/C4_Component.puml
+
+title C4 Component Diagram - "Реестр пространств: поселки, дома, комнаты"
+
+Component_Ext(apiGw, "API Gateway", "HTTP", "Единая точка входа для клиентов")
+Component_Ext(access, "Access Service", "HTTP", "Валидация JWT и проверка прав")
+ComponentDb_Ext(spacesDb, "Spaces DB", "PostgreSQL", "settlements, houses, user_house_access, invitations")
+ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "События пространства")
+
+Container_Boundary(spaces, "Spaces Registry") {
+    Component(settlementApi, "Settlement API", "Spring Bean\n<<RestController>>", "CRUD посёлков, список домов в посёлке")
+    Component(houseApi, "House API", "Spring Bean\n<<RestController>>", "Создание/обновление дома, чтение")
+    Component(membershipApi, "Membership API", "Spring Bean\n<<RestController>>", "Список участников, роли, удаление")
+    Component(invitationApi, "Invitation API", "Spring Bean\n<<RestController>>", "Приглашение участника, принятие/отклонение")
+
+    Component(settlementService, "Settlement Service", "Spring Bean\n<<Service>>", "Бизнес-логика по посёлкам")
+    Component(houseService, "House Service", "Spring Bean\n<<Service>>", "Бизнес-логика по домам")
+    Component(membershipService, "Membership Service", "Spring Bean\n<<Service>>", "Роли и доступы к домам")
+    Component(invitationService, "Invitation Service", "Spring Bean\n<<Service>>", "Жизненный цикл приглашений")
+    Component(policyClient, "Policy Client", "Spring Bean", "Запросы на проверку прав к Access Service")
+    Component(repository, "Spaces Repository", "Spring Bean\n<<Repository>>", "houses, user_house_access, invitations")
+    Component(eventProducer, "Event Producer", "Spring Bean\n<<Producer>>", "HouseCreated, MemberInvited, InvitationAccepted")
+}
+
+Rel(apiGw, settlementApi, "HTTP: /settlements/*", "JSON/HTTPS")
+Rel(apiGw, houseApi, "HTTP: /houses/*", "JSON/HTTPS")
+Rel(apiGw, membershipApi, "HTTP: /houses/{id}/members/*", "JSON/HTTPS")
+Rel(apiGw, invitationApi, "HTTP: /invitations/*", "JSON/HTTPS")
+
+Rel(settlementApi, settlementService, "create/update/read/list-houses")
+Rel(houseApi, houseService, "create/update/read")
+Rel(membershipApi, membershipService, "list/add/remove/role")
+Rel(invitationApi, invitationService, "invite/accept/decline")
+
+Rel(settlementService, repository, "read/write settlements")
+Rel(houseService, policyClient, "check owner/member rights")
+Rel(houseService, repository, "CRUD операции для домов")
+Rel(membershipService, policyClient, "check permissions")
+Rel(invitationService, policyClient, "check inviter rights")
+Rel(policyClient, access, "introspect JWT / authorize", "HTTP")
+
+Rel(repository, spacesDb, "JDBC")
+Rel(eventProducer, kafka, "publish SettlementCreated, HouseCreated, MemberInvited, InvitationAccepted", "Topic: spaces.*.v1")
+
+@enduml
+
+

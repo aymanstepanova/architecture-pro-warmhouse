@@ -79,7 +79,6 @@ class CommandMapperRegistry {
     + resolve(moduleId: String): CommandMapper
 }
 
-' ===== Команды и порты =====
 class Command {
     - commandId: UUID
     - deviceId: String

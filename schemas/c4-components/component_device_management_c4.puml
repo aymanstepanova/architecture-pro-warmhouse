@@ -4,6 +4,7 @@
 title C4 Component Diagram - "Управление устройствами"
 
 Component_Ext(apiGw, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+System_Ext(access, "Access System", "Проверка JWT, ролей, прав доступа (подсистема)")
 
 Container_Boundary(device_man, "DeviceManagement") {
     Component(api, "Device Command API", "Spring Bean\n<<RestController>>", "Приём команд и запрос текущего состояния")
@@ -16,6 +17,7 @@ Container_Boundary(device_man, "DeviceManagement") {
 
     Component(eventConsumer, "Event Consumer", "Spring Bean\n<<Handler>>", "Подписка на события из Event Bus")
     Component(eventProcessor, "Event Processor", "Spring Bean\n<<Service>>", "Обработка событий из Event Bus")
+    Component(policyClient, "Policy Client", "Spring Bean", "Запросы на проверку прав к Access System")
 
     Component(repository, "Device Repository", "Spring Bean\n<<Repository>>", "Хранение цифрового двойника (desired + reported)")
 }
@@ -37,6 +39,8 @@ Rel(eventProcessor, repository, "Удалить датчик")
 
 ' Потоки команд (API -> desired -> IoT Bus)
 Rel(api, commandHandler, "Команда: изменить состояние устройства (desired)")
+Rel(commandHandler, policyClient, "Проверить права пользователя на выполнение команды")
+Rel(policyClient, access, "Проверить JWT и получить права пользователя (дома и роли в них)", "HTTP")
 Rel(commandHandler, repository, "Сохранить desired")
 Rel(commandHandler, producer, "Опубликовать команду устройству")
 Rel(producer, IoT_bus, "Публикует команды", "MQTT")
@@ -50,6 +54,7 @@ Rel(repository, deviceManDB, "Хранение desired + reported", "JDBC")
 ' Чтение текущего состояния через API
 Rel(api, stateService, "Запрос текущего состояния")
 Rel(stateService, repository, "Прочитать desired + reported")
+Rel(stateService, policyClient, "Проверить права пользователя на просмотр")
 
 
 @enduml

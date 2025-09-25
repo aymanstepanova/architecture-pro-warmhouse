@@ -1,0 +1,42 @@
+@startuml
+!include ../styles/C4_Component.puml
+
+title C4 Component Diagram - "Access Service" (Identity, Auth, RBAC)
+
+Component_Ext(apiGw, "API Gateway", "HTTP", "Единая точка входа для клиентов")
+Component_Ext(sso, "SSO Provider", "HTTP-server", "Внешний/встроенный провайдер SSO (опционально)")
+ComponentDb_Ext(accessDb, "Access DB", "PostgreSQL", "users, credentials, sessions, roles, policies")
+ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "События домена пользователей")
+
+Container_Boundary(access, "Access Service") {
+    Component(authApi, "Auth API", "Spring Bean\n<<RestController>>", "Регистрация, логин, refresh, logout")
+    Component(userApi, "User API", "Spring Bean\n<<RestController>>", "Профиль пользователя (read-only)")
+
+    Component(authService, "Auth Service", "Spring Bean\n<<Service>>", "Хеширование паролей, валидация, сессии")
+    Component(tokenProvider, "JWT Provider", "Spring Bean", "Подпись/проверка JWT, ротация ключей")
+    Component(policyService, "Policy Engine", "Spring Bean\n<<Service>>", "RBAC/ABAC: роли, политики, разрешения")
+    Component(userService, "User Service", "Spring Bean\n<<Service>>", "CRUD пользователя, атрибуты, настройки")
+    Component(repository, "Access Repository", "Spring Bean\n<<Repository>>", "users, credentials, sessions, roles, policies")
+    Component(eventProducer, "Event Producer", "Spring Bean\n<<Producer>>", "Публикация событий: UserRegistered, UserUpdated")
+}
+
+Rel(apiGw, authApi, "HTTP: /auth/*", "JSON/HTTPS")
+Rel(apiGw, userApi, "HTTP: /users/* (read)", "JSON/HTTPS")
+
+Rel(authApi, authService, "выполняет операции: register/login/refresh/logout")
+Rel(authService, tokenProvider, "подписывает и проверяет JWT")
+Rel(authService, repository, "сохраняет/отдает users, credentials, sessions")
+
+Rel(userApi, userService, "profile/read")
+Rel(userService, repository, "отдает/читает users, roles")
+
+Rel(policyService, repository, "отдает роли и политики доступа")
+
+Rel(eventProducer, kafka, "публикует события UserRegistered, UserUpdated", "Topic: user.*.v1")
+Rel(repository, accessDb, "JDBC")
+
+Rel(tokenProvider, sso, "federation / external auth (optional)")
+
+@enduml
+
+

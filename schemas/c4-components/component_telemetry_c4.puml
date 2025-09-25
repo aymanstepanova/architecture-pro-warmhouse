@@ -4,17 +4,20 @@
 title C4 Component Diagram - "Телеметрия"
 
 Component_Ext(apiGw, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+System_Ext(access, "Access System", "Проверка JWT, ролей, прав доступа")
 ComponentQueue_Ext(IoT_bus, "IoT Bus", "Yandex IoT Core", "Метрики с датчиков")
 ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
 
 Container_Boundary(telemetry, "Telemetry") {
     Component(queryApi, "Telemetry Query API", "Spring Bean\n<<RestController>>", "Выдача метрик (read-only)")
+    Component(queryService, "Telemetry Query Service", "Spring Bean\n<<Service>>", "Проверка прав и выдача метрик")
 
     Component(repository, "Telemetry Repository", "Spring Bean\n<<Repository>>", "Хранение временных рядов метрик")
     Component(consumer, "IoT Telemetry Consumer", "Spring Bean\n<<Handler>>", "Подписка на метрики от IoT Bus")
     Component(processor, "Telemetry Processor", "Spring Bean\n<<Service>>", "Валидация и нормализация метрик")
     Component(eventConsumer, "Event Consumer", "Spring Bean\n<<Handler>>",  "Подписка на события из Event Bus")
     Component(eventProcessor, "Event Processor", "Spring Bean\n<<Service>>",  "Обработка событий из Event Bus")
+    Component(policyClient, "Policy Client", "Spring Bean\n<<Component>>", "Запросы на проверку прав к Access Service")
 }
 
 ComponentDb_Ext(telemetryDB, "Telemetry DB", "PostgreSQL", "Хранение временных рядов метрик")
@@ -35,7 +38,10 @@ Rel(repository, telemetryDB, "Хранение датчиков(ссылки) и
 
 '' Чтение метрик
 Rel(apiGw, queryApi, "Запрос (HTTP) — метрики для UI", "JSON/HTTPS")
-Rel(queryApi, repository, "SQL read", "JDBC")
+Rel(queryApi, queryService, "Прорерить права пользователя на просмотр")
+Rel(queryService, policyClient, "Прорерить права пользователя на просмотр")
+Rel(policyClient, access, "Проверить JWT и получить права пользователя (дома и роли в них)", "HTTP")
+Rel(queryService, repository, "SQL read", "JDBC")
 
 
 @enduml
