@@ -1,0 +1,497 @@
+openapi: 3.0.3
+info:
+  title: Spaces Service API
+  version: 1.0.0
+  description: |
+    Сервис пространств: посёлки, дома, членства и приглашения.
+servers:
+  - url: http://localhost:8086
+    description: Локальный запуск Spaces Service
+security:
+  - BearerAuth: []
+tags:
+  - name: Settlements
+    description: Управление посёлками
+  - name: Houses
+    description: Управление домами
+  - name: Memberships
+    description: Управление участниками домов
+  - name: Invitations
+    description: Приглашения в дом
+paths:
+  /api/v1/settlements:
+    get:
+      tags: [Settlements]
+      summary: Список посёлков
+      parameters:
+        - name: city
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            default: 0
+            minimum: 0
+      responses:
+        '200':
+          description: Список посёлков
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettlementList'
+    post:
+      tags: [Settlements]
+      summary: Создать посёлок
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementCreate'
+      responses:
+        '201':
+          description: Посёлок создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/settlements/{settlementId}:
+    parameters:
+      - name: settlementId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Settlements]
+      summary: Получить посёлок
+      responses:
+        '200':
+          description: Посёлок
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Settlements]
+      summary: Обновить посёлок
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SettlementUpdate'
+      responses:
+        '200':
+          description: Посёлок обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Settlement'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/houses:
+    get:
+      tags: [Houses]
+      summary: Список домов
+      parameters:
+        - name: settlement_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: owner_user_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Список домов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HouseList'
+    post:
+      tags: [Houses]
+      summary: Создать дом
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HouseCreate'
+      responses:
+        '201':
+          description: Дом создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/House'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/houses/{houseId}:
+    parameters:
+      - name: houseId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Houses]
+      summary: Получить дом
+      responses:
+        '200':
+          description: Дом
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/House'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Houses]
+      summary: Обновить дом
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HouseUpdate'
+      responses:
+        '200':
+          description: Дом обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/House'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/houses/{houseId}/members:
+    get:
+      tags: [Memberships]
+      summary: Список участников дома
+      parameters:
+        - name: houseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Участники
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MembershipList'
+    post:
+      tags: [Memberships]
+      summary: Добавить участника (прямая выдача доступа)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MembershipCreate'
+      responses:
+        '201':
+          description: Доступ выдан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/invitations:
+    post:
+      tags: [Invitations]
+      summary: Пригласить пользователя в дом
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationCreate'
+      responses:
+        '201':
+          description: Приглашение создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/invitations/{invitationId}/accept:
+    post:
+      tags: [Invitations]
+      summary: Принять приглашение
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Приглашение принято
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Membership'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /api/v1/invitations/{invitationId}/decline:
+    post:
+      tags: [Invitations]
+      summary: Отклонить приглашение
+      parameters:
+        - name: invitationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Приглашение отклонено
+        '404':
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Settlement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    SettlementCreate:
+      type: object
+      required: [name, city, timezone]
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+    SettlementUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        city:
+          type: string
+        region:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+    SettlementList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Settlement'
+        total:
+          type: integer
+    House:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        settlement_id:
+          type: string
+          format: uuid
+        owner_user_id:
+          type: string
+          format: uuid
+        address_line:
+          type: string
+        city:
+          type: string
+        timezone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    HouseCreate:
+      type: object
+      required: [settlement_id, owner_user_id, address_line, city, timezone]
+      properties:
+        settlement_id:
+          type: string
+          format: uuid
+        owner_user_id:
+          type: string
+          format: uuid
+        address_line:
+          type: string
+        city:
+          type: string
+        timezone:
+          type: string
+    HouseUpdate:
+      type: object
+      properties:
+        address_line:
+          type: string
+        city:
+          type: string
+        timezone:
+          type: string
+    HouseList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/House'
+        total:
+          type: integer
+    Membership:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        house_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [owner, member, guest]
+        invited_at:
+          type: string
+          format: date-time
+          nullable: true
+        accepted_at:
+          type: string
+          format: date-time
+          nullable: true
+    MembershipCreate:
+      type: object
+      required: [user_id, house_id, role]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        house_id:
+          type: string
+          format: uuid
+        role:
+          type: string
+          enum: [owner, member, guest]
+    MembershipList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Membership'
+        total:
+          type: integer
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        house_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [member, guest]
+        expires_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+    InvitationCreate:
+      type: object
+      required: [house_id, email, role]
+      properties:
+        house_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [member, guest]
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: object

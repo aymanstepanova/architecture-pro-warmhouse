@@ -1,0 +1,766 @@
+openapi: 3.0.3
+info:
+  title: Smart Home API Gateway
+  version: 1.0.0
+  description: |
+    Единая точка входа для всех API системы "Тёплый дом".
+    Маршрутизирует запросы к соответствующим микросервисам и обеспечивает аутентификацию.
+servers:
+  - url: http://localhost:8080
+    description: Локальный запуск API Gateway
+tags:
+  - name: Authentication
+    description: Аутентификация и авторизация
+  - name: Devices
+    description: Управление устройствами (через Device Registry)
+  - name: Device State
+    description: Управление состоянием устройств (через Device Management)
+  - name: Telemetry
+    description: Телеметрические данные (через Telemetry Service)
+  - name: Health
+    description: Проверка состояния системы
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Проверка состояния системы
+      description: Возвращает статус всех микросервисов
+      responses:
+        "200":
+          description: Система работает
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealthStatus'
+        "503":
+          description: Один или несколько сервисов недоступны
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemHealthStatus'
+  /api/v1/auth/login:
+    post:
+      tags: [Authentication]
+      summary: Вход в систему
+      description: Аутентификация пользователя и получение JWT токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        "200":
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        "401":
+          description: Неверные учетные данные
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Обновление токена
+      description: Обновляет JWT токен используя refresh token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        "200":
+          description: Токен обновлен
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        "401":
+          description: Недействительный refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/devices:
+    post:
+      tags: [Devices]
+      summary: Регистрация нового устройства
+      description: Создает новое устройство в системе (проксирует в Device Registry)
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegistrationRequest'
+      responses:
+        "201":
+          description: Устройство зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+    get:
+      tags: [Devices]
+      summary: Получить список устройств
+      description: Возвращает список устройств пользователя (проксирует в Device Registry)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: house_id
+          in: query
+          description: Фильтр по дому
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Фильтр по статусу устройства
+          schema:
+            type: string
+            enum: [REGISTERED, ACTIVE, OFFLINE, REMOVED]
+        - name: limit
+          in: query
+          description: Количество записей на странице
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Смещение для пагинации
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Список устройств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceListResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/devices/{deviceId}:
+    get:
+      tags: [Devices]
+      summary: Получить информацию об устройстве
+      description: Возвращает информацию об устройстве (проксирует в Device Registry)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Информация об устройстве
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Devices]
+      summary: Удалить устройство
+      description: Удаляет устройство из системы (проксирует в Device Registry)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Устройство удалено
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/devices/{deviceId}/state:
+    get:
+      tags: [Device State]
+      summary: Получить состояние устройства
+      description: Возвращает текущее состояние устройства (проксирует в Device Management)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Состояние устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceState'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Device State]
+      summary: Изменить состояние устройства
+      description: Обновляет состояние устройства (проксирует в Device Management)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceStateUpdate'
+      responses:
+        "202":
+          description: Команда принята к обработке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/devices/{deviceId}/metrics:
+    get:
+      tags: [Telemetry]
+      summary: Получить метрики устройства
+      description: Возвращает телеметрические данные устройства (проксирует в Telemetry Service)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_code
+          in: query
+          description: Фильтр по типу метрики
+          schema:
+            type: string
+            enum: [temperature, humidity, power, motion, pressure]
+        - name: from
+          in: query
+          description: Начальная дата (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Конечная дата (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: aggregation
+          in: query
+          description: Тип агрегации данных
+          schema:
+            type: string
+            enum: [raw, avg, min, max, sum, count]
+            default: raw
+        - name: interval
+          in: query
+          description: Интервал агрегации (в минутах)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1440
+            default: 1
+        - name: limit
+          in: query
+          description: Количество записей на странице
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1000
+            default: 100
+        - name: offset
+          in: query
+          description: Смещение для пагинации
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Метрики устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/devices/{deviceId}/metrics/latest:
+    get:
+      tags: [Telemetry]
+      summary: Получить последние метрики устройства
+      description: Возвращает последние значения метрик устройства (проксирует в Telemetry Service)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_codes
+          in: query
+          description: Список типов метрик через запятую
+          schema:
+            type: string
+            example: "temperature,humidity,power"
+      responses:
+        "200":
+          description: Последние метрики устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LatestMetricsResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/houses/{houseId}/metrics:
+    get:
+      tags: [Telemetry]
+      summary: Получить метрики дома
+      description: Возвращает метрики всех устройств в доме (проксирует в Telemetry Service)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: houseId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: metric_code
+          in: query
+          description: Фильтр по типу метрики
+          schema:
+            type: string
+            enum: [temperature, humidity, power, motion, pressure]
+        - name: from
+          in: query
+          description: Начальная дата (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Конечная дата (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+        - name: aggregation
+          in: query
+          description: Тип агрегации данных
+          schema:
+            type: string
+            enum: [raw, avg, min, max, sum, count]
+            default: avg
+        - name: interval
+          in: query
+          description: Интервал агрегации (в минутах)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 1440
+            default: 60
+      responses:
+        "200":
+          description: Метрики дома
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email пользователя
+        password:
+          type: string
+          format: password
+          description: Пароль пользователя
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+          description: JWT токен доступа
+        refresh_token:
+          type: string
+          description: Токен для обновления
+        token_type:
+          type: string
+          example: "Bearer"
+        expires_in:
+          type: integer
+          description: Время жизни токена в секундах
+        user:
+          $ref: '#/components/schemas/User'
+    RefreshTokenRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+          description: Refresh token
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+    SystemHealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Общий статус системы
+        services:
+          type: object
+          properties:
+            device_registry:
+              $ref: '#/components/schemas/ServiceHealth'
+            device_management:
+              $ref: '#/components/schemas/ServiceHealth'
+            telemetry:
+              $ref: '#/components/schemas/ServiceHealth'
+            api_gateway:
+              $ref: '#/components/schemas/ServiceHealth'
+        timestamp:
+          type: string
+          format: date-time
+    ServiceHealth:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, unhealthy, degraded]
+        response_time_ms:
+          type: integer
+          description: Время отклика в миллисекундах
+        version:
+          type: string
+          description: Версия сервиса
+        last_check:
+          type: string
+          format: date-time
+    DeviceRegistrationRequest:
+      type: object
+      required: [type_id, house_id, serial_number]
+      properties:
+        type_id:
+          type: string
+          format: uuid
+          description: ID типа устройства из каталога
+        house_id:
+          type: string
+          format: uuid
+          description: ID дома, где устанавливается устройство
+        serial_number:
+          type: string
+          description: Серийный номер устройства
+          example: "TH-001-2024-ABC123"
+        nickname:
+          type: string
+          description: Пользовательское имя устройства
+          example: "Термостат в гостиной"
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор устройства
+        type_id:
+          type: string
+          format: uuid
+          description: ID типа устройства
+        house_id:
+          type: string
+          format: uuid
+          description: ID дома
+        serial_number:
+          type: string
+          description: Серийный номер устройства
+        nickname:
+          type: string
+          description: Пользовательское имя устройства
+        status:
+          type: string
+          enum: [REGISTERED, ACTIVE, OFFLINE, REMOVED]
+          description: Текущий статус устройства
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания записи
+        updated_at:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+    DeviceListResponse:
+      type: object
+      properties:
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+        total:
+          type: integer
+          description: Общее количество устройств
+        limit:
+          type: integer
+          description: Количество записей на странице
+        offset:
+          type: integer
+          description: Смещение для пагинации
+    DeviceState:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: ID устройства
+        desired:
+          type: object
+          description: Желаемое состояние устройства
+          additionalProperties: true
+          example:
+            heating:
+              enabled: true
+              target_temperature: 22.0
+              mode: "eco"
+        reported:
+          type: object
+          description: Фактическое состояние устройства
+          additionalProperties: true
+          example:
+            heating:
+              enabled: true
+              current_temperature: 21.5
+              target_temperature: 22.0
+              mode: "eco"
+        version:
+          type: integer
+          description: Версия состояния для оптимистичной блокировки
+        last_updated:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+    DeviceStateUpdate:
+      type: object
+      description: Обновление желаемого состояния устройства
+      properties:
+        heating:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: Включить/выключить отопление
+            target_temperature:
+              type: number
+              format: float
+              description: Целевая температура
+              minimum: 5
+              maximum: 35
+            mode:
+              type: string
+              enum: [eco, comfort, manual]
+              description: Режим работы
+        lighting:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            brightness:
+              type: integer
+              minimum: 0
+              maximum: 100
+    CommandResponse:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор команды
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed, timeout]
+          description: Статус команды
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания команды
+    TelemetryData:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Уникальный идентификатор записи
+        device_id:
+          type: string
+          format: uuid
+          description: ID устройства
+        metric_code:
+          type: string
+          description: Код метрики
+          example: "temperature"
+        value:
+          type: object
+          description: Значение метрики (может быть числом, объектом, строкой)
+          additionalProperties: true
+          example:
+            temperature: 22.5
+            unit: "celsius"
+            quality: "good"
+        received_at:
+          type: string
+          format: date-time
+          description: Время получения данных
+    MetricsResponse:
+      type: object
+      properties:
+        metrics:
+          type: array
+          items:
+            $ref: '#/components/schemas/TelemetryData'
+        total:
+          type: integer
+          description: Общее количество записей
+        limit:
+          type: integer
+          description: Количество записей на странице
+        offset:
+          type: integer
+          description: Смещение для пагинации
+        aggregation:
+          type: string
+          description: Примененная агрегация
+        interval_minutes:
+          type: integer
+          description: Интервал агрегации в минутах
+    LatestMetricsResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        metrics:
+          type: array
+          items:
+            type: object
+            properties:
+              metric_code:
+                type: string
+                example: "temperature"
+              value:
+                type: object
+                additionalProperties: true
+              received_at:
+                type: string
+                format: date-time
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+        code:
+          type: string
+          description: Код ошибки
+        details:
+          type: object
+          description: Дополнительные детали ошибки
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Требуется аутентификация
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
