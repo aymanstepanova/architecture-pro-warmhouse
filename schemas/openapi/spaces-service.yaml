@@ -187,16 +187,16 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
   /api/v1/houses/{houseId}/members:
+    parameters:
+      - name: houseId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
     get:
       tags: [Memberships]
       summary: Список участников дома
-      parameters:
-        - name: houseId
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
       responses:
         '200':
           description: Участники
