@@ -5,44 +5,58 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.Random;
-import java.util.UUID;
 
 @Service
 public class TemperatureService {
-
+    public static final String UNIT = "C";
+    private final TemperatureGenerator temperatureGenerator;
     private final Random rnd = new Random();
 
+    public TemperatureService(TemperatureGenerator temperatureGenerator) {
+        this.temperatureGenerator = temperatureGenerator;
+    }
+
     public TemperatureReading read(String location) {
-        // Имитация природы: -30..+45 °C, плюс лёгкое «смещение» от локации
-        double value = getTemperature(location);
+        double value = temperatureGenerator.getTemperature(location);
+        String sensorId = getSensorIdByLocation(location);
 
         return new TemperatureReading(
-                "sensor-" + UUID.nameUUIDFromBytes(location.getBytes()),
+                sensorId,
                 location,
                 value,
-                "C",
+                UNIT,
                 OffsetDateTime.now()
         );
     }
 
     public TemperatureReading readBySensorId(String sensorId) {
-        // Имитация природы: -30..+45 °C, плюс лёгкое «смещение» от локации
-        double value = getTemperature(sensorId);
+        double value = temperatureGenerator.getTemperature(sensorId);
+        String location = getLocationBySensorId(sensorId);
 
         return new TemperatureReading(
                 sensorId,
-                //обычно сервис знает, где находится датчик
-                "Living Room",
+                location,
                 value,
-                "C",
+                UNIT,
                 OffsetDateTime.now()
         );
     }
 
-    private double getTemperature(String sensorId) {
-        double base = -30 + rnd.nextDouble() * 75;
-        double bias = Math.tanh(sensorId.hashCode() / 10000.0) * 3; // -3..+3
-        double value = Math.round((base + bias) * 10.0) / 10.0;
-        return value;
+    private static String getSensorIdByLocation(String location) {
+        return switch (location) {
+            case "Living Room" -> "1";
+            case "Bedroom" -> "2";
+            case "Kitchen" -> "3";
+            default -> "0";
+        };
+    }
+
+    private static String getLocationBySensorId(String sensorId) {
+        return switch (sensorId) {
+            case "1" -> "Living Room";
+            case "2" -> "Bedroom";
+            case "3" -> "Kitchen";
+            default -> "Unknown";
+        };
     }
 }
