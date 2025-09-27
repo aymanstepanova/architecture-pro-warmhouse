@@ -1,0 +1,1 @@
+truncate device_mgmt.devices;

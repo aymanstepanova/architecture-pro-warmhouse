@@ -79,8 +79,8 @@ services:
     networks:
       - smarthome-network
   # расскомментировать, чтобы подключиться локально к БД по порту 15432
-    ports:
-      - "15432:5432"
+  #  ports:
+  #    - "15432:5432"
   telemetry-service:
     build:
       context: ./telemetry
@@ -105,9 +105,54 @@ services:
     networks:
       - smarthome-network
 
+  device-postgres:
+    image: postgres:16-alpine
+    container_name: device-postgres
+    environment:
+      - POSTGRES_USER=devman
+      - POSTGRES_PASSWORD=devman
+    volumes:
+      - device_pg_data:/var/lib/postgresql/data
+      - ./device-management/db/init.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d device_mgmt" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+    # расскомментировать, чтобы подключиться локально к БД по порту 15432
+    ports:
+      - "35432:5432"
+  device-management-service:
+    build:
+      context: ./device-management
+      dockerfile: Dockerfile
+    image: device-management:0.1.0
+    container_name: device-management-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://device-postgres:5432/device_mgmt
+      - SPRING_DATASOURCE_USERNAME=devman
+      - SPRING_DATASOURCE_PASSWORD=devman
+    healthcheck:
+      test: curl --fail -s http://localhost:8083/actuator/health
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 6
+    depends_on:
+      device-postgres:
+        condition: service_healthy
+    ports:
+      - "8083:8083"
+    networks:
+      - smarthome-network
+
 volumes:
   postgres_data:
   telemetry_pg_data:
+  device_pg_data:
 
 networks:
   smarthome-network:
