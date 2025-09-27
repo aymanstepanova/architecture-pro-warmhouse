@@ -1,6 +1,7 @@
 package ru.smarthome.telemetry.controller;
 
 
+import lombok.RequiredArgsConstructor;
 import ru.smarthome.telemetry.model.MetricDto;
 import ru.smarthome.telemetry.service.MetricsQueryService;
 import jakarta.validation.constraints.Size;
@@ -11,13 +12,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/metrics")
+@RequiredArgsConstructor
 public class MetricsController {
 
     private final MetricsQueryService service;
-
-    public MetricsController(MetricsQueryService service) {
-        this.service = service;
-    }
 
     // Базовый сценарий:
     // GET /metrics?house_id=uuid&location=Living Room&metric_code=humidity

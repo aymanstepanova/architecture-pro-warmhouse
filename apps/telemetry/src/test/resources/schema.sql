@@ -4,9 +4,10 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- справочник сенсоров
 CREATE TABLE IF NOT EXISTS telemetry.sensors (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    house_id        UUID NOT NULL, -- внешний ID дома (таблица houses в БД SpacesService)
     sensor_id       TEXT NOT NULL UNIQUE,
-    device_id       TEXT,
+    house_id        UUID, -- внешний ID дома (таблица houses в БД SpacesService)
+    device_id       TEXT, -- внешний ID дома (таблица houses в БД Devices для единого реестра устройств)
+    sensor_name     TEXT,
     sensor_type     TEXT NOT NULL,
     unit            TEXT NOT NULL,
     location        TEXT,

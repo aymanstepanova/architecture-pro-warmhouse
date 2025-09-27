@@ -16,8 +16,6 @@ public class SensorEntity {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(name = "house_id")
-    private Long houseId;
 
     @Column(name = "location")
     private String location;
@@ -30,6 +28,11 @@ public class SensorEntity {
 
     @Column(name = "unit")
     private String unit;
-
+    @Column(name = "status")
+    private String status;
+    @Column(name = "sensor_name")
+    private String sensorName;
+    @Column(name = "house_id")
+    private UUID houseId;
 
 }

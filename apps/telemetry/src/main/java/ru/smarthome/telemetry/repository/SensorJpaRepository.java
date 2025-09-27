@@ -9,5 +9,6 @@ import java.util.UUID;
 
 public interface SensorJpaRepository extends JpaRepository<SensorEntity, UUID> {
     Optional<SensorEntity> findByExternalSensorId(String externalSensorId);
+
 }
 
