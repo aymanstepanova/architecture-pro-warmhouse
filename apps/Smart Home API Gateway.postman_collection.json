@@ -1,0 +1,401 @@
+{
+	"info": {
+		"_postman_id": "a645c10b-6fcd-426f-b236-358f6188befb",
+		"name": "Smart Home API Gateway",
+		"description": "A collection for testing the Smart Home Device Management API",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "666695"
+	},
+	"item": [
+		{
+			"name": "Devices",
+			"item": [
+				{
+					"name": "1. Create Device",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// генерируем UUID (v4)\r",
+									"function uuidv4() {\r",
+									"    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {\r",
+									"        let r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);\r",
+									"        return v.toString(16);\r",
+									"    });\r",
+									"}\r",
+									"\r",
+									"let newDeviceKey = uuidv4();\r",
+									"let newHomeId = uuidv4();\r",
+									"let newOwnerAccount = uuidv4();\r",
+									"\r",
+									"// сохраняем в переменную коллекции\r",
+									"pm.collectionVariables.set(\"deviceKey\", newDeviceKey);\r",
+									"pm.collectionVariables.set(\"newHomeId\", newHomeId);\r",
+									"pm.collectionVariables.set(\"newOwnerAccount\", newOwnerAccount);\r",
+									"\r",
+									"// для отладки\r",
+									"console.log(\"Generated deviceKey:\", newDeviceKey);\r",
+									"console.log(\"Generated homeId:\", newHomeId);\r",
+									"console.log(\"Generated ownerAccount:\", newOwnerAccount);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"// сохраняем значение \"id\" в переменную коллекции\r",
+									"pm.collectionVariables.set(\"device_id\", response.id);\r",
+									"\r",
+									"// для проверки сразу выведем в консоль\r",
+									"console.log(\"Created Device ID:\", response.id);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"deviceKey\": \"{{deviceKey}}\",\n  \"typeCode\": \"termostat\",\n  \"model\": \"termostat-super-bot\",\n  \"location\": \"Living Room\", \n  \"homeId\": \"{{newHomeId}}\",\n  \"ownerAccount\": \"{{newOwnerAccount}}\",\n  \"metadata\": {\n    \"brand\": \"LG\"\n  }\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/devices",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"devices"
+							]
+						},
+						"description": "Добавление нового устройства"
+					},
+					"response": []
+				},
+				{
+					"name": "2. Get All devices",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/devices",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"devices"
+							]
+						},
+						"description": "Retrieve all sensors"
+					},
+					"response": []
+				},
+				{
+					"name": "3. Get Device by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/devices/{{device_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"devices",
+								"{{device_id}}"
+							]
+						},
+						"description": "Retrieve a specific sensor by ID"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Sensors",
+			"item": [
+				{
+					"name": "Create Sensor",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let response = pm.response.json();\r",
+									"\r",
+									"// сохраняем значение \"id\" в переменную коллекции\r",
+									"pm.collectionVariables.set(\"sensor_id\", response.id);\r",
+									"\r",
+									"// для проверки сразу выведем в консоль\r",
+									"console.log(\"Created Sensor ID:\", response.id);\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Living Room humidity\",\n    \"type\": \"humidity\",\n    \"location\": \"Living Room\",\n    \"unit\": \"%\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/sensors",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"sensors"
+							]
+						},
+						"description": "Create a new sensor"
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Sensors",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/sensors",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"sensors"
+							]
+						},
+						"description": "Retrieve all sensors"
+					},
+					"response": []
+				},
+				{
+					"name": "Get Sensor by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/sensors/{{sensor_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"sensors",
+								"{{sensor_id}}"
+							]
+						},
+						"description": "Retrieve a specific sensor by ID"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Sensor",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"Updated Living Room Temperature\",\n    \"type\": \"temperature\",\n    \"location\": \"Living Room\",\n    \"unit\": \"°C\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/sensors/{{sensor_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"sensors",
+								"{{sensor_id}}"
+							]
+						},
+						"description": "Update an existing sensor"
+					},
+					"response": []
+				},
+				{
+					"name": "Update Sensor Value",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"value\": 22.5,\n    \"status\": \"active\"\n}"
+						},
+						"url": {
+							"raw": "http://localhost:8080/api/v1/sensors/{{sensor_id}}/value",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"sensors",
+								"{{sensor_id}}",
+								"value"
+							]
+						},
+						"description": "Update a sensor's value and status"
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Sensor",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/api/v1/sensors/{{sensor_id}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"api",
+								"v1",
+								"sensors",
+								"{{sensor_id}}"
+							]
+						},
+						"description": "Delete a sensor"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:8080/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "8080",
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check if the API is running"
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8080"
+		},
+		{
+			"key": "device_id",
+			"value": ""
+		},
+		{
+			"key": "deviceKey",
+			"value": ""
+		},
+		{
+			"key": "newHomeId",
+			"value": ""
+		},
+		{
+			"key": "newOwnerAccount",
+			"value": ""
+		},
+		{
+			"key": "sensor_id",
+			"value": ""
+		}
+	]
+}

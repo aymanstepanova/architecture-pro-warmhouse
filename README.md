@@ -164,7 +164,157 @@ Locations - название комнаты, sensorId - идентификато
 
 ### **Что нужно сделать**
 
-1. Создайте новые микросервисы для управления телеметрией и устройствами (с простейшей логикой), которые будут интегрированы с существующим монолитным приложением. Каждый микросервис на своем ООП языке.
-2. Обеспечьте взаимодействие между микросервисами и монолитом (при желании с помощью брокера сообщений), чтобы постепенно перенести функциональность из монолита в микросервисы. 
 
-В результате у вас должны быть созданы Dockerfiles и docker-compose для запуска микросервисов. 
+
+---
+
+# **Реализация MVP: Микросервисная архитектура**
+
+## **Что было реализовано**
+
+### **1. Созданные микросервисы:**
+
+- **Device Management Service** (Java/Spring Boot) - управление устройствами
+- **Telemetry Service** (Java/Spring Boot) - сбор и хранение телеметрии
+- **Temperature API** (Java/Spring Boot) - API для работы с температурными данными
+
+### **2. API Gateway**
+
+Монолитное приложение `smart-home` было преобразовано в **API Gateway**, который:
+- Проксирует запросы к микросервисам
+- Сохраняет локальную функциональность для датчиков
+- Обеспечивает единую точку входа для всех API
+
+### **3. Архитектура системы**
+
+flowchart LR
+  C[Client] --> G[Smart Home<br/>API Gateway :8080]
+  G --> DM[Device Management :8083]
+  G --> TS[Telemetry Service :8082]
+  G --> TA[Temperature API :8081]
+
+## **Запуск системы**
+
+### **Быстрый запуск:**
+
+```bash
+cd apps
+./init.sh
+```
+
+### **Ручной запуск:**
+
+```bash
+cd apps
+docker-compose up --build -d
+```
+
+### **Проверка статуса:**
+
+```bash
+docker-compose ps
+```
+
+### **Просмотр логов:**
+
+```bash
+# Все сервисы
+docker-compose logs -f
+
+# Конкретный сервис
+docker-compose logs -f app
+docker-compose logs -f device-management-service
+docker-compose logs -f telemetry-service
+```
+
+## **Тестирование**
+
+### **1. Postman коллекция**
+
+Импортируйте `Smart Home API Gateway.postman_collection.json` в Postman и запустите коллекцию "Smart Home API Gateway".
+
+### **2. Тестовый скрипт**
+
+```bash
+cd apps
+chmod +x test_api_gateway.sh
+./test_api_gateway.sh
+```
+
+### **3. Ручное тестирование**
+
+**Создание устройства:**
+```bash
+curl -X POST http://localhost:8080/api/v1/devices \
+  -H "Content-Type: application/json" \
+  -d '{
+  	"deviceKey": "521f8d6f-6714-4818-b7f3-bc69f7990119",
+  	"typeCode": "termostat",
+  	"model": "termostat-super-bot",
+  	"location": "Living Room", 
+  	"homeId": "fa572980-e64d-44be-97ba-52081fa81e1b",
+  	"ownerAccount": "c410ab19-22c0-49ff-b984-45ef7e6efddc",
+  	"metadata": {
+  	  "brand": "LG"
+  	}
+	}'
+```
+
+**Получение списка устройств:**
+```bash
+curl http://localhost:8080/api/v1/devices
+```
+
+**Создание датчика:**
+```bash
+curl -X POST http://localhost:8080/api/v1/sensors \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Temperature Sensor",
+    "type": "temperature",
+    "location": "Living Room",
+    "unit": "celsius"
+  }'
+```
+
+## **Доступные API**
+
+### **Device Management (через API Gateway)**
+- `POST /api/v1/devices` - регистрация устройства
+- `GET /api/v1/devices` - список устройств
+- `GET /api/v1/devices/{id}` - получение устройства по ID
+
+### **Sensors (локальные API + проксирование в telemetry)**
+- `GET /api/v1/sensors` - список датчиков
+- `POST /api/v1/sensors` - создание датчика
+- `GET /api/v1/sensors/{id}` - получение датчика по ID
+- `PUT /api/v1/sensors/{id}` - обновление датчика
+- `DELETE /api/v1/sensors/{id}` - удаление датчика
+- `PATCH /api/v1/sensors/{id}/value` - обновление значения датчика
+- `GET /api/v1/sensors/temperature/{location}` - получение температуры по локации
+
+## **Сервисы и порты**
+
+- **API Gateway** (smart-home): `http://localhost:8080`
+- **Device Management**: `http://localhost:8083`
+- **Telemetry Service**: `http://localhost:8082`
+- **Temperature API**: `http://localhost:8081`
+
+## **Базы данных**
+
+- **Основная БД** (smart-home): `localhost:15432`
+- **Telemetry БД**: `localhost:25432`
+- **Device Management БД**: `localhost:35432`
+
+## **Что изменилось в архитектуре**
+
+1. **Монолит → API Gateway**: Приложение smart-home теперь работает как API Gateway
+2. **Микросервисы**: Созданы отдельные сервисы для управления устройствами и телеметрии
+3. **Интеграция**: Обеспечено взаимодействие между API Gateway и микросервисами
+4. **Масштабируемость**: Каждый сервис может масштабироваться независимо
+5. **Отказоустойчивость**: Падение одного сервиса не влияет на работу других
+
+## **Документация**
+
+- Подробная документация API Gateway: [apps/API_GATEWAY_README.md](apps/API_GATEWAY_README.md)
+- Документация по запуску: [apps/README.md](apps/README.md) 
