@@ -50,7 +50,7 @@ public class SensorsControllerIT extends PostgresIntegrationTest {
         assertThat(body.get("sensorType")).isEqualTo("temperature");
         assertThat(body.get("unit")).isEqualTo("C");
         assertThat(body.get("location")).isEqualTo("Bedroom");
-        assertThat(body.get("status")).isEqualTo("inactive");
+        assertThat(body.get("status")).isEqualTo("active");
         assertThat(body.get("id")).isNotNull();
 
         // Проверим, что запись действительно в БД
@@ -58,7 +58,7 @@ public class SensorsControllerIT extends PostgresIntegrationTest {
         assertThat(e).isPresent();
         assertThat(e.get().getSensorType()).isEqualTo("temperature");
         assertThat(e.get().getLocation()).isEqualTo("Bedroom");
-        assertThat(e.get().getStatus()).isEqualTo("inactive");
+        assertThat(e.get().getStatus()).isEqualTo("active");
         assertThat(e.get().getUnit()).isEqualTo("C");
         assertThat(e.get().getExternalSensorId()).isEqualTo("ext-temp-1");
     }

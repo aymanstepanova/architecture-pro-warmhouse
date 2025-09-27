@@ -3,9 +3,12 @@ package ru.smarthome.telemetry.repository.entity;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Entity
@@ -26,8 +29,9 @@ public class TelemetryDataEntity {
     @Column(name = "metric_code")
     private String metricCode;
 
-    @Column(name = "value_json")
-    private String valueJson;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "value_json", columnDefinition = "jsonb")
+    private Map<String, Object> valueJson;
 
     @Column(name = "measured_at", nullable = false)
     private OffsetDateTime measuredAt;
