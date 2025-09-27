@@ -1,7 +1,7 @@
 @startuml
 
 skinparam linetype ortho
-title Тёплый дом — ER диаграмма (логическая модель)
+title Тёплый дом — ER диаграмма (целевая логическая модель)
 
 ' === USERS & HOUSES ===
 entity "users" as USER {

@@ -1,0 +1,39 @@
+@startuml
+!include styles/C4_Container.puml
+
+' LAYOUT_LEFT_RIGHT()
+
+Person(user, "Client")
+
+' BEFORE
+Boundary(b, "До: Монолит \nбез регистрации устройств") {
+  Container(mon, "Smart Home Monolith", "HTTP", "Port :8080") #F4364C
+  ContainerDb(monodb, "Monolith DB", "RDBMS", "Deprecated") #F4364C
+
+}
+Rel(user, mon, "Calls")
+Rel(mon, monodb, "Reads/Writes")
+
+' AFTER
+Boundary(a, "После: API Gateway + Services") {
+  Container(api, "API Gateway", "HTTP", "Port :8080") #darkgreen
+  ContainerDb(monodbdepr, "Monolith DB", "RDBMS", "Deprecated") #E6C700
+  note left
+      после миграции все данные датчиков
+      будут в TelemetryDB
+  end note
+  Container(dm, "Device Management", "HTTP", "Port :8083") #green
+  Container(ts, "Telemetry Service", "HTTP", "Port :8082") #green
+  Container(temp, "Temperature API (deprecated)", "HTTP", "Port :8081") #E6C700
+  note left
+     Telemetry Service заменит/ спрячет Temperature API.
+  end note
+}
+
+Rel(user, api, "Calls")
+Rel_D(api, dm, "Маршрутизирует /devices/*")
+Rel_D(api, monodbdepr, "Хранит старые датчики (deprecated)")
+Rel_D(api, ts, "Маршрутизирует /sensors/*")
+Rel_D(api, temp, "Маршрутизирует /temperature/*")
+
+@enduml

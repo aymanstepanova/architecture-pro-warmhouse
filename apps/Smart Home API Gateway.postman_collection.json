@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "a645c10b-6fcd-426f-b236-358f6188befb",
 		"name": "Smart Home API Gateway",
-		"description": "A collection for testing the Smart Home Device Management API",
+		"description": "Коллекция для тестирования API платформы \"Умный дом\".",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
 		"_exporter_id": "666695"
 	},

@@ -19,8 +19,8 @@ paths:
   /api/v1/devices/{deviceId}/state:
     get:
       tags: [Device State]
-      summary: Получить текущее состояние устройства
-      description: Возвращает желаемое и фактическое состояние устройства
+      summary: Получить текущее состояние устройства [WIP]
+      description: Возвращает желаемое и фактическое состояние устройства (не реализовано в MVP)
       parameters:
         - name: deviceId
           in: path
@@ -39,8 +39,8 @@ paths:
           $ref: '#/components/responses/NotFound'
     patch:
       tags: [Device State]
-      summary: Изменить желаемое состояние устройства
-      description: Обновляет желаемое состояние устройства и отправляет команду устройству
+      summary: Изменить желаемое состояние устройства [WIP]
+      description: Обновляет желаемое состояние устройства и отправляет команду устройству (не реализовано в MVP)
       parameters:
         - name: deviceId
           in: path
@@ -74,8 +74,8 @@ paths:
   /api/v1/devices/{deviceId}/modules:
     get:
       tags: [Device Modules]
-      summary: Получить активные модули устройства
-      description: Возвращает список включенных модулей и их настройки
+      summary: Получить активные модули устройства [WIP]
+      description: Возвращает список включенных модулей и их настройки (не реализовано в MVP)
       parameters:
         - name: deviceId
           in: path
@@ -94,8 +94,8 @@ paths:
           $ref: '#/components/responses/NotFound'
     patch:
       tags: [Device Modules]
-      summary: Обновить настройки модулей устройства
-      description: Включает/выключает модули и обновляет их параметры
+      summary: Обновить настройки модулей устройства [WIP]
+      description: Включает/выключает модули и обновляет их параметры (не реализовано в MVP)
       parameters:
         - name: deviceId
           in: path
@@ -123,8 +123,8 @@ paths:
   /api/v1/devices/{deviceId}/commands:
     post:
       tags: [Device Commands]
-      summary: Отправить команду устройству
-      description: Отправляет произвольную команду устройству через IoT Bus
+      summary: Отправить команду устройству [WIP]
+      description: Отправляет произвольную команду устройству через IoT Bus (не реализовано в MVP)
       parameters:
         - name: deviceId
           in: path
@@ -152,8 +152,8 @@ paths:
   /api/v1/commands/{commandId}/status:
     get:
       tags: [Device Commands]
-      summary: Получить статус команды
-      description: Проверяет статус выполнения команды
+      summary: Получить статус команды [WIP]
+      description: Проверяет статус выполнения команды (не реализовано в MVP)
       parameters:
         - name: commandId
           in: path

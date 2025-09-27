@@ -19,49 +19,56 @@ paths:
   /api/v1/metrics:
     get:
       tags: [Metrics]
-      summary: Получить телеметрические данные
-      description: Возвращает метрики устройств с возможностью фильтрации и агрегации
+      summary: Получить телеметрические данные [PARTLY]
+      description: Возвращает метрики устройств с возможностью фильтрации и агрегации (частично реализовано в MVP)
       parameters:
         - name: device_id
           in: query
-          description: Фильтр по устройству
+          description: Фильтр по устройству [WIP]
           schema:
             type: string
             format: uuid
         - name: house_id
           in: query
-          description: Фильтр по дому
+          description: Фильтр по дому ✅
           schema:
             type: string
             format: uuid
-        - name: metric_code
+        - name: location
           in: query
-          description: Фильтр по типу метрики
+          description: Фильтр по локации ✅
           schema:
             type: string
+            maxLength: 128
+        - name: metric_code
+          in: query
+          description: Фильтр по типу метрики ✅
+          schema:
+            type: string
+            maxLength: 64
             enum: [temperature, humidity, power, motion, pressure]
         - name: from
           in: query
-          description: Начальная дата (ISO 8601)
+          description: Начальная дата (ISO 8601) [WIP]
           schema:
             type: string
             format: date-time
         - name: to
           in: query
-          description: Конечная дата (ISO 8601)
+          description: Конечная дата (ISO 8601) [WIP]
           schema:
             type: string
             format: date-time
         - name: aggregation
           in: query
-          description: Тип агрегации данных
+          description: Тип агрегации данных [WIP]
           schema:
             type: string
             enum: [raw, avg, min, max, sum, count]
             default: raw
         - name: interval
           in: query
-          description: Интервал агрегации (в минутах)
+          description: Интервал агрегации (в минутах) [WIP]
           schema:
             type: integer
             minimum: 1
@@ -69,7 +76,7 @@ paths:
             default: 1
         - name: limit
           in: query
-          description: Количество записей на странице
+          description: Количество записей на странице [WIP]
           schema:
             type: integer
             minimum: 1
@@ -77,7 +84,7 @@ paths:
             default: 100
         - name: offset
           in: query
-          description: Смещение для пагинации
+          description: Смещение для пагинации [WIP]
           schema:
             type: integer
             minimum: 0
@@ -94,24 +101,30 @@ paths:
   /api/v1/metrics/latest:
     get:
       tags: [Metrics]
-      summary: Получить последние значения метрик
-      description: Возвращает последние значения метрик для устройств
+      summary: Получить последние значения метрик [WIP]
+      description: Возвращает последние значения метрик для устройств (частично реализовано в MVP)
       parameters:
         - name: device_id
           in: query
-          description: Фильтр по устройству
+          description: Фильтр по устройству [WIP]
           schema:
             type: string
             format: uuid
         - name: house_id
           in: query
-          description: Фильтр по дому
+          description: Фильтр по дому ✅
           schema:
             type: string
             format: uuid
+        - name: location
+          in: query
+          description: Фильтр по локации ✅
+          schema:
+            type: string
+            maxLength: 128
         - name: metric_codes
           in: query
-          description: Список типов метрик через запятую
+          description: Список типов метрик через запятую [WIP]
           schema:
             type: string
             example: "temperature,humidity,power"
@@ -127,42 +140,49 @@ paths:
   /api/v1/metrics/statistics:
     get:
       tags: [Statistics]
-      summary: Получить статистику по метрикам
-      description: Возвращает статистические данные по метрикам за указанный период
+      summary: Получить статистику по метрикам [WIP]
+      description: Возвращает статистические данные по метрикам за указанный период (не реализовано в MVP)
       parameters:
         - name: device_id
           in: query
-          description: Фильтр по устройству
+          description: Фильтр по устройству [WIP]
           schema:
             type: string
             format: uuid
         - name: house_id
           in: query
-          description: Фильтр по дому
+          description: Фильтр по дому ✅
           schema:
             type: string
             format: uuid
-        - name: metric_code
+        - name: location
           in: query
-          description: Тип метрики
+          description: Фильтр по локации ✅
           schema:
             type: string
+            maxLength: 128
+        - name: metric_code
+          in: query
+          description: Тип метрики ✅
+          schema:
+            type: string
+            maxLength: 64
             enum: [temperature, humidity, power, motion, pressure]
         - name: from
           in: query
-          description: Начальная дата (ISO 8601)
+          description: Начальная дата (ISO 8601) [WIP]
           schema:
             type: string
             format: date-time
         - name: to
           in: query
-          description: Конечная дата (ISO 8601)
+          description: Конечная дата (ISO 8601) [WIP]
           schema:
             type: string
             format: date-time
         - name: group_by
           in: query
-          description: Группировка данных
+          description: Группировка данных [WIP]
           schema:
             type: string
             enum: [hour, day, week, month]
@@ -179,42 +199,49 @@ paths:
   /api/v1/metrics/export:
     get:
       tags: [Metrics]
-      summary: Экспорт телеметрических данных
-      description: Экспортирует данные в различных форматах
+      summary: Экспорт телеметрических данных [WIP]
+      description: Экспортирует данные в различных форматах (не реализовано в MVP)
       parameters:
         - name: device_id
           in: query
-          description: Фильтр по устройству
+          description: Фильтр по устройству [WIP]
           schema:
             type: string
             format: uuid
         - name: house_id
           in: query
-          description: Фильтр по дому
+          description: Фильтр по дому ✅
           schema:
             type: string
             format: uuid
-        - name: metric_code
+        - name: location
           in: query
-          description: Тип метрики
+          description: Фильтр по локации ✅
           schema:
             type: string
+            maxLength: 128
+        - name: metric_code
+          in: query
+          description: Тип метрики ✅
+          schema:
+            type: string
+            maxLength: 64
             enum: [temperature, humidity, power, motion, pressure]
         - name: from
           in: query
-          description: Начальная дата (ISO 8601)
+          description: Начальная дата (ISO 8601) [WIP]
           schema:
             type: string
             format: date-time
         - name: to
           in: query
-          description: Конечная дата (ISO 8601)
+          description: Конечная дата (ISO 8601) [WIP]
           schema:
             type: string
             format: date-time
         - name: format
           in: query
-          description: Формат экспорта
+          description: Формат экспорта [WIP]
           schema:
             type: string
             enum: [csv, json, xlsx]
