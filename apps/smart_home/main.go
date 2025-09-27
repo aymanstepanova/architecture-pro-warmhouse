@@ -32,6 +32,14 @@ func main() {
 	temperatureService := services.NewTemperatureService(temperatureAPIURL)
 	log.Printf("Temperature service initialized with API URL: %s\n", temperatureAPIURL)
 
+	// Initialize telemetry service
+	telemetryAPIURL := getEnv("TELEMETRY_API_URL", "http://telemetry-service:8082")
+	telemetryService, err := services.NewTelemetryService(telemetryAPIURL)
+	if err != nil {
+		log.Fatalf("Failed to initialize telemetry service: %v\n", err)
+	}
+	log.Printf("Telemetry service initialized with API URL: %s\n", telemetryAPIURL)
+
 	// Initialize router
 	router := gin.Default()
 
@@ -46,7 +54,7 @@ func main() {
 	apiRoutes := router.Group("/api/v1")
 
 	// Register sensor routes
-	sensorHandler := handlers.NewSensorHandler(database, temperatureService)
+	sensorHandler := handlers.NewSensorHandler(database, temperatureService, telemetryService)
 	sensorHandler.RegisterRoutes(apiRoutes)
 
 	// Start server

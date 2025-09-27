@@ -80,8 +80,8 @@ services:
     networks:
       - smarthome-network
   # расскомментировать, чтобы подключиться локально к БД по порту 15432
-  #  ports:
-  #    - "25432:5432"
+    ports:
+      - "25432:5432"
   telemetry-service:
     build:
       context: ./telemetry

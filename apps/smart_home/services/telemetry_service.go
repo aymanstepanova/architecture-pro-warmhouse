@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -10,20 +11,30 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
 	"github.com/google/uuid"
 )
 
 // ========= DTO из Telemetry API =========
 
 type MetricDTO struct {
-	ExternalSensorId string                 `json:"externalSensorId"`
-	SensorType       string                 `json:"sensorType"`
-	Unit             string                 `json:"unit"`
-	Location         string                 `json:"location"`
-	MetricCode       string                 `json:"metricCode"`
-	Value            float64                `json:"value"`
-	ValueJson        map[string]any         `json:"valueJson"` // опционально
-	MeasuredAt       time.Time              `json:"measuredAt"`
+	ExternalSensorId string         `json:"externalSensorId"`
+	SensorType       string         `json:"sensorType"`
+	Unit             string         `json:"unit"`
+	Location         string         `json:"location"`
+	MetricCode       string         `json:"metricCode"`
+	Value            float64        `json:"value"`
+	ValueJson        map[string]any `json:"valueJson"` // опционально
+	MeasuredAt       time.Time      `json:"measuredAt"`
+}
+
+// SensorCreateRequest represents the data needed to create a sensor in telemetry service
+type SensorCreateRequest struct {
+	SensorID   string `json:"sensorId" binding:"required"`
+	SensorType string `json:"sensorType" binding:"required"`
+	Unit       string `json:"unit"`
+	Location   string `json:"location"`
+	Name       string `json:"name"`
 }
 
 // ========= Публичный интерфейс сервиса =========
@@ -34,6 +45,9 @@ type TelemetryService interface {
 
 	// Последние значения по локации; metricCode можно не передавать (nil) — вернём все типы
 	GetLatestByLocation(ctx context.Context, location string, metricCode *string) ([]MetricDTO, error)
+
+	// Создание датчика в telemetry сервисе
+	CreateSensor(ctx context.Context, request SensorCreateRequest) error
 }
 
 // ========= Опции и конструктор =========
@@ -50,7 +64,7 @@ func WithLogger(l *log.Logger) TelemetryOption {
 
 type telemetryService struct {
 	baseURL *url.URL
-	http *http.Client
+	http    *http.Client
 	logger  *log.Logger
 }
 
@@ -123,6 +137,50 @@ func (s *telemetryService) GetLatestByLocation(ctx context.Context, location str
 		return nil, err
 	}
 	return out, nil
+}
+
+func (s *telemetryService) CreateSensor(ctx context.Context, request SensorCreateRequest) error {
+	if request.SensorID == "" {
+		return errors.New("sensor ID is required")
+	}
+	if request.SensorType == "" {
+		return errors.New("sensor type is required")
+	}
+
+	rel := &url.URL{Path: "/sensors"}
+	u := s.baseURL.ResolveReference(rel)
+
+	// Преобразуем в JSON
+	jsonData, err := json.Marshal(request)
+	if err != nil {
+		return fmt.Errorf("marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, u.String(), bytes.NewBuffer(jsonData))
+	if err != nil {
+		return fmt.Errorf("build request: %w", err)
+	}
+
+	// Корреляция — берём из контекста, если есть; иначе генерим
+	cid := correlationIDFromCtx(ctx)
+	if cid == "" {
+		cid = uuid.NewString()
+	}
+	req.Header.Set("X-Correlation-Id", cid)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := s.http.Do(req)
+	if err != nil {
+		return fmt.Errorf("telemetry http error: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("telemetry: bad status %d for %s", resp.StatusCode, u.String())
+	}
+
+	return nil
 }
 
 // ========= Внутренности HTTP-вызовов =========
