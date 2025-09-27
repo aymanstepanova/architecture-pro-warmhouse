@@ -100,62 +100,22 @@
 
 ### 2. Документация API
 
-Здесь приложите ссылки на документацию API для микросервисов, которые вы спроектировали в первой части проектной работы. Для документирования используйте Swagger/OpenAPI или AsyncAPI.
+Open API
+- [api-gateway.yaml](./schemas/openapi/api-gateway.yaml)
+- [access-service.yaml](./schemas/openapi/access-service.yaml)
+- [device-management-api.yaml](./schemas/openapi%2Fdevice-management-api.yaml)
+- [device-registry-api.yaml](./schemas/openapi%2Fdevice-registry-api.yaml)
+- [spaces-service.yaml](./schemas%2Fopenapi%2Fspaces-service.yaml)
+- [telemetry-api.yaml](./schemas/openapi%2Ftelemetry-api.yaml)
 
 # Задание 5. Работа с docker и docker-compose
-
-Перейдите в apps.
-
-Там находится приложение-монолит для работы с датчиками температуры. В README.md описано как запустить решение.
-
-Вам нужно:
-
-1) сделать простое приложение temperature-api на любом удобном для вас языке программирования, которое при запросе /temperature?location= будет отдавать рандомное значение температуры.
-
-Locations - название комнаты, sensorId - идентификатор названия комнаты
-
-```
-	// If no location is provided, use a default based on sensor ID
-	if location == "" {
-		switch sensorID {
-		case "1":
-			location = "Living Room"
-		case "2":
-			location = "Bedroom"
-		case "3":
-			location = "Kitchen"
-		default:
-			location = "Unknown"
-		}
-	}
-
-	// If no sensor ID is provided, generate one based on location
-	if sensorID == "" {
-		switch location {
-		case "Living Room":
-			sensorID = "1"
-		case "Bedroom":
-			sensorID = "2"
-		case "Kitchen":
-			sensorID = "3"
-		default:
-			sensorID = "0"
-		}
-	}
-```
-
-2) Приложение следует упаковать в Docker и добавить в docker-compose. Порт по умолчанию должен быть 8081
-
-3) Кроме того для smart_home приложения требуется база данных - добавьте в docker-compose файл настройки для запуска postgres с указанием скрипта инициализации ./smart_home/init.sql
 
 Для проверки можно использовать Postman коллекцию smarthome-api.postman_collection.json и вызвать:
 
 - Create Sensor
 - Get All Sensors
 
-Должно при каждом вызове отображаться разное значение температуры
-
-Ревьюер будет проверять точно так же.
+Должно при каждом вызове отображаться разное значение температуры.
 
 
 # **Задание 6. Разработка MVP**
@@ -164,7 +124,7 @@ Locations - название комнаты, sensorId - идентификато
 
 ## **Что было реализовано**
 
-### **1. Созданные микросервисы:**
+### **1. Новые микросервисы:**
 
 - **Device Management Service** (Java/Spring Boot) - управление устройствами
 - **Telemetry Service** (Java/Spring Boot) - сбор и хранение телеметрии
@@ -335,4 +295,3 @@ curl -X POST http://localhost:8080/api/v1/sensors \
 ## **Документация**
 
 - Подробная документация API Gateway: [apps/API_GATEWAY_README.md](apps/API_GATEWAY_README.md)
-- Документация по запуску: [apps/README.md](apps/README.md) 
