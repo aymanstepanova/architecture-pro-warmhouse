@@ -1,0 +1,138 @@
+@startuml
+title DeviceManagement — Class Diagram (Module = interface)
+
+' ===== Доменные сущности =====
+class Device {
+    - deviceId: String
+    - type: DeviceType
+    - desired: DesiredStateDoc
+    - reported: ReportedStateDoc
+    - status: DeviceStatus
+}
+
+class DeviceType {
+    + name: String
+    + version: int
+    + modules: Set<String>  ' идентификаторы модулей (e.g. "modeControl")
+}
+
+class DesiredStateDoc {
+    + data: Map<String,Object>;
+    + schemaRef: String;
+    + schemaVersion: int
+}
+
+class ReportedStateDoc {
+    + data: Map<String,Object>;
+    + schemaRef: String;
+    + schemaVersion: int
+}
+
+class AuditEntry {
+    - id: long
+    - entityType: String  ' "Device"
+    - entityId: String    ' deviceId
+    - action: String      ' "DesiredPatched", ...
+    - actorId: String
+    - occured_at: Instant
+    - version: int        ' версия агрегата после изменения
+    - diffJson: Map       ' JSON Patch / merge-patch
+    - requestId: String
+    - previousHash: String : защита от редактирования истории
+    - currentHash: String  : защита от редактирования истории
+}
+
+' ===== Стратегии модулей =====
+interface Module {
+  + getModuleType(): String                 ' "modeControl", "temperatureTarget", ...
+  + validateDesired(section: Map): void
+  + mergeDesired(current: Map, patch: Map): Map
+}
+' управляет режимами (HEAT/COOL/OFF у термостата)
+class ModeControlModule
+' задаёт температуру (targetTemp у термостата)
+class TemperatureTargetModule
+' простая логика «включить / выключить» устройство
+class SwitchModule
+
+Module <|.. ModeControlModule
+Module <|.. TemperatureTargetModule
+Module <|.. SwitchModule
+
+' ===== Маппинг в команды =====
+interface CommandMapper {
+  + toCommand(deviceId: String, section: Map): Command
+}
+class ModeControlCommandMapper
+class TemperatureTargetCommandMapper
+class SwitchCommandMapper
+
+CommandMapper <|.. ModeControlCommandMapper
+CommandMapper <|.. TemperatureTargetCommandMapper
+CommandMapper <|.. SwitchCommandMapper
+
+' Связка модуль ↔ маппер (по ключу id)
+class ModuleRegistry {
+    + resolve(moduleId: String): Module
+}
+class CommandMapperRegistry {
+    + resolve(moduleId: String): CommandMapper
+}
+
+class Command {
+    - commandId: UUID
+    - deviceId: String
+    - moduleId: String
+    - action: String
+    - payload: Map<String,Object>
+    - correlationId: String
+    - createdAt: Instant
+}
+
+interface CommandPublisher {
+    + publish(cmd: Command): void
+}
+
+' ===== Сервисы/репозитории/веб =====
+class DeviceCommandController {
+    + patchDesired(deviceId: String, patch: Map): void
+}
+
+class CommandHandlerService {
+    - deviceRepository: DeviceRepository
+    - moduleRegistry: ModuleRegistry
+    - commandMapperRegistry: CommandMapperRegistry
+    - auditLogRepository: AuditLogRepository
+    - commandPublisher: CommandPublisher
+    __
+    + applyDesiredPatch(deviceId: String, patch: Map): void
+}
+
+class DeviceRepository {
+    + findByDeviceId(deviceId:String): Device;
+    + save(device:Device): Device
+}
+
+class AuditLogRepository {
+    + save(entry: AuditEntry): AuditEntry
+}
+
+Device --> DeviceType
+Device --> DesiredStateDoc
+Device --> ReportedStateDoc
+
+DeviceCommandController --> CommandHandlerService
+CommandHandlerService --> DeviceRepository
+CommandHandlerService --> ModuleRegistry
+CommandHandlerService --> CommandMapperRegistry
+CommandHandlerService --> AuditLogRepository
+CommandHandlerService --> CommandPublisher
+
+AuditLogRepository o-- AuditEntry : отправляет/сохраняет аудит лог
+DeviceRepository o-- Device
+ModuleRegistry o-- Module: определяет конкретный модуль
+CommandMapperRegistry o-- CommandMapper: определяет конкретный маппер
+CommandMapper ..> Command: создает команду из параметров
+CommandPublisher ..> Command: отправляет команду в IoT брокер
+
+@enduml

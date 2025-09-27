@@ -1,0 +1,44 @@
+@startuml
+title 3. Изменение состояния устройства.
+
+actor Client as client
+participant "Web/Mobile\nUI" as ui
+participant "API \nGateway" as gate
+
+box "Device Management Service" #FFF5CC
+    participant "DeviceCommandController" as api
+    participant "CommandHandler" as handler
+    participant "DeviceRepository" as repo
+    participant "CommandPublisher" as iot
+end box
+
+database "Device Management DB" as db
+queue "IoT Bus" as broker
+
+client -> ui : Выбирает изменение состояния устройства\n(режима/целевой температуры/вкл/выкл)
+ui -> gate: PATCH /devices/{id}/desired \n{DesiredState{MODE}}
+gate -> gate: check / create session
+gate -> api: PATCH /devices/{id}/desired  \n{DesiredState{MODE}} + JWT
+
+api -> handler: applyDesiredPatch(deviceId, patch)
+handler -> repo: findByDeviceId(deviceId)
+repo -> db: select * from Device ..
+repo <-- db:  Device(desired, reported, version)
+
+repo --> handler: Device(desired, reported, version)
+
+handler -> handler: validatePolicy()\ncheckIdempotency()
+handler -> repo: saveDesired(deviceId, value, version+1)
+repo -> db: insert desired / update version
+repo <-- db:  Device(desired, reported, version)
+repo --> handler: ok
+
+handler -> handler: buildCommand
+handler -> iot: publish(command)
+iot -\ broker: publish(command)
+api <-- handler: 202 Accepted {commandId}
+gate <-- api: 202 Accepted {commandId}
+ui <-- gate: 202 Accepted {commandId}
+client <-- ui: Команда принята \n(изменения в интерфейсе \nне отражают фактические изменения)
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+!include ../styles/C4_Component.puml
+
+title C4 Component Diagram - "Управление устройствами"
+
+Component_Ext(apiGw, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+System_Ext(access, "Access System", "Проверка JWT, ролей, прав доступа (подсистема)")
+
+Container_Boundary(device_man, "DeviceManagement") {
+    Component(api, "Device Command API", "Spring Bean\n<<RestController>>", "Приём команд и запрос текущего состояния")
+    Component(commandHandler, "Command Handler", "Spring Bean\n<<Service>>", "Обработка команд (desired state + публикация)")
+    Component(stateService, "State Service", "Spring Bean\n<<Service>>", "Предоставление состояния устройства (desired + reported)")
+
+    Component(producer, "Command Publisher", "Spring Bean\n<<Handler>>", "Публикация команд в IoT Bus")
+    Component(consumer, "IoT Consumer", "Spring Bean\n<<Handler>>", "Подписка на события состояния из IoT Bus")
+    Component(stateProcessor, "State Processor", "Spring Bean\n<<Service>>", "Обработка событий состояния из IoT Bus")
+
+    Component(eventConsumer, "Event Consumer", "Spring Bean\n<<Handler>>", "Подписка на события из Event Bus")
+    Component(eventProcessor, "Event Processor", "Spring Bean\n<<Service>>", "Обработка событий из Event Bus")
+    Component(policyClient, "Policy Client", "Spring Bean", "Запросы на проверку прав к Access System")
+
+    Component(repository, "Device Repository", "Spring Bean\n<<Repository>>", "Хранение цифрового двойника (desired + reported)")
+}
+
+ComponentDb_Ext(deviceManDB, "Device Management DB", "PostgreSQL",  "Хранение состояния устройств (цифровой двойник: desired + reported)")
+ComponentQueue_Ext(IoT_bus, "IoT Bus", "Yandex IoT Core",  "Команды и состояния")
+ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
+
+' Вход через API Gateway
+Rel(apiGw, api, "Запросы управления", "JSON/HTTPS")
+
+' Регистрация/Удаление устройства (Event Bus -> DeviceManagement)
+Rel(kafka, eventConsumer, "Слушает\nDeviceRegistered", "Topic: device.registered.v1")
+Rel(kafka, eventConsumer, "Слушает\nDeviceDeleted", "Topic: device.deleted.v1")
+Rel(eventConsumer, eventProcessor, "Обработка события DeviceRegistered")
+Rel(eventConsumer, eventProcessor, "Обработка события DeviceDeleted")
+Rel(eventProcessor, repository, "Сохранить датчик")
+Rel(eventProcessor, repository, "Удалить датчик")
+
+' Потоки команд (API -> desired -> IoT Bus)
+Rel(api, commandHandler, "Команда: изменить состояние устройства (desired)")
+Rel(commandHandler, policyClient, "Проверить права пользователя на выполнение команды")
+Rel(policyClient, access, "Проверить JWT и получить права пользователя (дома и роли в них)", "HTTP")
+Rel(commandHandler, repository, "Сохранить desired")
+Rel(commandHandler, producer, "Опубликовать команду устройству")
+Rel(producer, IoT_bus, "Публикует команды", "MQTT")
+
+' Фактическое состояние (IoT Bus -> reported -> DB)
+Rel_R(consumer, IoT_bus, "Слушает фактическое состояние", "MQTT")
+Rel(consumer, stateProcessor, "Обновить reported")
+Rel(stateProcessor, repository, "Обновить reported")
+Rel(repository, deviceManDB, "Хранение desired + reported", "JDBC")
+
+' Чтение текущего состояния через API
+Rel(api, stateService, "Запрос текущего состояния")
+Rel(stateService, repository, "Прочитать desired + reported")
+Rel(stateService, policyClient, "Проверить права пользователя на просмотр")
+
+
+@enduml

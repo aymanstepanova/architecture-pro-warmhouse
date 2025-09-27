@@ -1,0 +1,382 @@
+openapi: 3.0.3
+info:
+  title: Device Management Service API
+  version: 1.0.0
+  description: |
+    API для управления состоянием устройств в системе "Тёплый дом".
+    Обеспечивает управление желаемым состоянием устройств (desired state) и получение текущего состояния (reported state).
+servers:
+  - url: http://localhost:8083
+    description: Локальный запуск Device Management Service
+tags:
+  - name: Device State
+    description: Управление состоянием устройств
+  - name: Device Commands
+    description: Отправка команд устройствам
+  - name: Device Modules
+    description: Управление модулями устройств
+paths:
+  /api/v1/devices/{deviceId}/state:
+    get:
+      tags: [Device State]
+      summary: Получить текущее состояние устройства [WIP]
+      description: Возвращает желаемое и фактическое состояние устройства (не реализовано в MVP)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Состояние устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceState'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Device State]
+      summary: Изменить желаемое состояние устройства [WIP]
+      description: Обновляет желаемое состояние устройства и отправляет команду устройству (не реализовано в MVP)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceStateUpdate'
+      responses:
+        "202":
+          description: Команда принята к обработке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          description: Конфликт версий (устройство было изменено другим запросом)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/devices/{deviceId}/modules:
+    get:
+      tags: [Device Modules]
+      summary: Получить активные модули устройства [WIP]
+      description: Возвращает список включенных модулей и их настройки (не реализовано в MVP)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Список модулей устройства
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceModulesResponse'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Device Modules]
+      summary: Обновить настройки модулей устройства [WIP]
+      description: Включает/выключает модули и обновляет их параметры (не реализовано в MVP)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceModulesUpdate'
+      responses:
+        "200":
+          description: Настройки модулей обновлены
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceModulesResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/devices/{deviceId}/commands:
+    post:
+      tags: [Device Commands]
+      summary: Отправить команду устройству [WIP]
+      description: Отправляет произвольную команду устройству через IoT Bus (не реализовано в MVP)
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceCommand'
+      responses:
+        "202":
+          description: Команда отправлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/commands/{commandId}/status:
+    get:
+      tags: [Device Commands]
+      summary: Получить статус команды [WIP]
+      description: Проверяет статус выполнения команды (не реализовано в MVP)
+      parameters:
+        - name: commandId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Статус команды
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommandStatus'
+        "404":
+          $ref: '#/components/responses/NotFound'
+components:
+  schemas:
+    DeviceState:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+          description: ID устройства
+        desired:
+          type: object
+          description: Желаемое состояние устройства
+          additionalProperties: true
+          example:
+            heating:
+              enabled: true
+              target_temperature: 22.0
+              mode: "eco"
+        reported:
+          type: object
+          description: Фактическое состояние устройства
+          additionalProperties: true
+          example:
+            heating:
+              enabled: true
+              current_temperature: 21.5
+              target_temperature: 22.0
+              mode: "eco"
+        version:
+          type: integer
+          description: Версия состояния для оптимистичной блокировки
+        last_updated:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+    DeviceStateUpdate:
+      type: object
+      description: Обновление желаемого состояния устройства
+      properties:
+        heating:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              description: Включить/выключить отопление
+            target_temperature:
+              type: number
+              format: float
+              description: Целевая температура
+              minimum: 5
+              maximum: 35
+            mode:
+              type: string
+              enum: [eco, comfort, manual]
+              description: Режим работы
+        lighting:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            brightness:
+              type: integer
+              minimum: 0
+              maximum: 100
+        security:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+            mode:
+              type: string
+              enum: [armed, disarmed, night]
+    DeviceModulesResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceModule'
+    DeviceModule:
+      type: object
+      properties:
+        module_id:
+          type: string
+          format: uuid
+        module_code:
+          type: string
+          example: "heating"
+        enabled:
+          type: boolean
+          description: Включен ли модуль
+        params:
+          type: object
+          description: Параметры модуля
+          additionalProperties: true
+    DeviceModulesUpdate:
+      type: object
+      properties:
+        modules:
+          type: array
+          items:
+            type: object
+            properties:
+              module_id:
+                type: string
+                format: uuid
+              enabled:
+                type: boolean
+              params:
+                type: object
+                additionalProperties: true
+    DeviceCommand:
+      type: object
+      required: [command_type, payload]
+      properties:
+        command_type:
+          type: string
+          description: Тип команды
+          example: "set_temperature"
+        payload:
+          type: object
+          description: Данные команды
+          additionalProperties: true
+          example:
+            temperature: 22.0
+            mode: "eco"
+        priority:
+          type: string
+          enum: [low, normal, high, critical]
+          default: normal
+          description: Приоритет команды
+        timeout_seconds:
+          type: integer
+          minimum: 1
+          maximum: 300
+          default: 30
+          description: Таймаут выполнения команды в секундах
+    CommandResponse:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор команды
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed, timeout]
+          description: Статус команды
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания команды
+    CommandStatus:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [accepted, processing, completed, failed, timeout]
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+          nullable: true
+        error_message:
+          type: string
+          nullable: true
+          description: Сообщение об ошибке (если есть)
+        result:
+          type: object
+          description: Результат выполнения команды
+          additionalProperties: true
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+        code:
+          type: string
+          description: Код ошибки
+        details:
+          type: object
+          description: Дополнительные детали ошибки
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

@@ -1,0 +1,37 @@
+openapi: 3.0.3
+info: { title: Device Management API, version: 0.1.0 }
+paths:
+  /devices:
+    post:
+      summary: Register device
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/DeviceCreateRequest' } } }
+      responses: { '200': { description: OK } }
+    get:
+      summary: List devices
+      parameters:
+        - in: query; name: homeId; schema: { type: string, format: uuid }
+        - in: query; name: typeCode; schema: { type: string }
+        - in: query; name: location; schema: { type: string }
+      responses: { '200': { description: OK } }
+  /devices/{id}:
+    get:
+      parameters:
+        - in: path; name: id; required: true; schema: { type: string, format: uuid }
+      responses: { '200': { description: OK }, '404': { description: Not found } }
+
+components:
+  schemas:
+    DeviceCreateRequest:
+      type: object
+      required: [deviceKey, typeCode]
+      properties:
+        deviceKey: { type: string }
+        typeCode: { type: string }
+        model: { type: string }
+        location: { type: string }
+        status: { type: string }
+        metadata: { type: object }
+        homeId: { type: string, format: uuid }
+        ownerAccount: { type: string, format: uuid }

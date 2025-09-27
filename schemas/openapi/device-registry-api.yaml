@@ -1,0 +1,317 @@
+openapi: 3.0.3
+info:
+  title: Device Registry Service API
+  version: 1.0.0
+  description: |
+    API для управления реестром устройств в системе "Тёплый дом".
+    Обеспечивает регистрацию, удаление и получение информации об устройствах.
+servers:
+  - url: http://localhost:8082
+    description: Локальный запуск Device Registry Service
+tags:
+  - name: Devices
+    description: Управление устройствами
+  - name: Device Types
+    description: Управление типами устройств
+  - name: Modules
+    description: Управление модулями устройств
+paths:
+  /api/v1/devices:
+    post:
+      tags: [Devices]
+      summary: Регистрация нового устройства
+      description: Создает новое устройство в системе и публикует событие DeviceRegistered
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceRegistrationRequest'
+      responses:
+        "201":
+          description: Устройство успешно зарегистрировано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+        "409":
+          description: Устройство с таким серийным номером уже существует
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      tags: [Devices]
+      summary: Получить список устройств
+      description: Возвращает список всех устройств с возможностью фильтрации
+      parameters:
+        - name: house_id
+          in: query
+          description: Фильтр по дому
+          schema:
+            type: string
+            format: uuid
+        - name: type_id
+          in: query
+          description: Фильтр по типу устройства
+          schema:
+            type: string
+            format: uuid
+        - name: status
+          in: query
+          description: Фильтр по статусу устройства
+          schema:
+            type: string
+            enum: [REGISTERED, ACTIVE, OFFLINE, REMOVED]
+        - name: limit
+          in: query
+          description: Количество записей на странице
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: offset
+          in: query
+          description: Смещение для пагинации
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        "200":
+          description: Список устройств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceListResponse'
+        "400":
+          $ref: '#/components/responses/BadRequest'
+  /api/v1/devices/{deviceId}:
+    get:
+      tags: [Devices]
+      summary: Получить информацию об устройстве
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Информация об устройстве
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Devices]
+      summary: Удалить устройство
+      description: Удаляет устройство из реестра и публикует событие DeviceDeleted
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Устройство успешно удалено
+        "404":
+          $ref: '#/components/responses/NotFound'
+  /api/v1/device-types:
+    get:
+      tags: [Device Types]
+      summary: Получить список типов устройств
+      description: Возвращает каталог доступных типов устройств
+      parameters:
+        - name: vendor
+          in: query
+          description: Фильтр по производителю
+          schema:
+            type: string
+        - name: module_code
+          in: query
+          description: Фильтр по поддерживаемому модулю
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Список типов устройств
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceTypeListResponse'
+  /api/v1/modules:
+    get:
+      tags: [Modules]
+      summary: Получить список модулей
+      description: Возвращает каталог доступных модулей устройств
+      responses:
+        "200":
+          description: Список модулей
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModuleListResponse'
+components:
+  schemas:
+    DeviceRegistrationRequest:
+      type: object
+      required: [type_id, house_id, serial_number]
+      properties:
+        type_id:
+          type: string
+          format: uuid
+          description: ID типа устройства из каталога
+        house_id:
+          type: string
+          format: uuid
+          description: ID дома, где устанавливается устройство
+        serial_number:
+          type: string
+          description: Серийный номер устройства
+          example: "TH-001-2024-ABC123"
+        nickname:
+          type: string
+          description: Пользовательское имя устройства
+          example: "Термостат в гостиной"
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Уникальный идентификатор устройства
+        type_id:
+          type: string
+          format: uuid
+          description: ID типа устройства
+        house_id:
+          type: string
+          format: uuid
+          description: ID дома
+        serial_number:
+          type: string
+          description: Серийный номер устройства
+        nickname:
+          type: string
+          description: Пользовательское имя устройства
+        status:
+          type: string
+          enum: [REGISTERED, ACTIVE, OFFLINE, REMOVED]
+          description: Текущий статус устройства
+        created_at:
+          type: string
+          format: date-time
+          description: Время создания записи
+        updated_at:
+          type: string
+          format: date-time
+          description: Время последнего обновления
+        device_type:
+          $ref: '#/components/schemas/DeviceType'
+    DeviceType:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: "Smart Thermostat"
+        vendor:
+          type: string
+          example: "WarmHouse"
+        model:
+          type: string
+          example: "WH-TH-2024"
+        fw_min_version:
+          type: string
+          example: "1.2.0"
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Module'
+    Module:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: "heating"
+        name:
+          type: string
+          example: "Управление отоплением"
+        description:
+          type: string
+          example: "Модуль для управления температурой и режимами отопления"
+    DeviceListResponse:
+      type: object
+      properties:
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
+        total:
+          type: integer
+          description: Общее количество устройств
+        limit:
+          type: integer
+          description: Количество записей на странице
+        offset:
+          type: integer
+          description: Смещение для пагинации
+    DeviceTypeListResponse:
+      type: object
+      properties:
+        device_types:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceType'
+    ModuleListResponse:
+      type: object
+      properties:
+        modules:
+          type: array
+          items:
+            $ref: '#/components/schemas/Module'
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Сообщение об ошибке
+        code:
+          type: string
+          description: Код ошибки
+        details:
+          type: object
+          description: Дополнительные детали ошибки
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Внутренняя ошибка сервера
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

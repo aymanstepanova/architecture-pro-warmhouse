@@ -1,0 +1,13 @@
+@startuml
+title 1. Сохранение фактического (reported) состояния устройства
+
+participant "IoTConsumer" as iotc
+participant "StateProcessor" as proc
+participant "DeviceRepository" as repo
+
+iotc -> proc: onTelemetry(deviceId, {temperature: 22})
+proc -> repo: findByDeviceId(deviceId)
+proc <-- repo: DeviceState(...)
+proc -> repo: saveReported(deviceId, {temperature:22}, version+1)
+
+@enduml

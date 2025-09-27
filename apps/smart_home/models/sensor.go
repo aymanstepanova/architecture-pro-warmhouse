@@ -9,6 +9,10 @@ type SensorType string
 
 const (
 	Temperature SensorType = "temperature"
+	Humidity    SensorType = "humidity"
+	Pressure    SensorType = "pressure"
+	Light       SensorType = "light"
+	Motion      SensorType = "motion"
 )
 
 // Sensor represents a smart home sensor

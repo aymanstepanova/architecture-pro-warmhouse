@@ -1,0 +1,192 @@
+openapi: 3.0.3
+info:
+  title: Access Service API
+  version: 1.0.0
+  description: |
+    Сервис аутентификации и авторизации (JWT, роли/политики, пользователи).
+servers:
+  - url: http://localhost:8081
+    description: Локальный запуск Access Service
+security:
+  - BearerAuth: []
+tags:
+  - name: Auth
+    description: Аутентификация и управление токенами
+  - name: Users
+    description: Профиль пользователя
+paths:
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход по email/паролю
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              ok:
+                value:
+                  email: user@example.com
+                  password: secret123
+      responses:
+        '200':
+          description: Успешная аутентификация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Обновление access-токена
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+      responses:
+        '200':
+          description: Токен обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/auth/introspect:
+    post:
+      tags: [Auth]
+      summary: Проверка JWT и получение клеймов
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IntrospectRequest'
+      responses:
+        '200':
+          description: Результат интроспекции
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IntrospectResponse'
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Выход (аннулирование refresh-сессии)
+      responses:
+        '204':
+          description: Сессия завершена
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /api/v1/users/me:
+    get:
+      tags: [Users]
+      summary: Профиль текущего пользователя
+      responses:
+        '200':
+          description: Профиль пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    RefreshRequest:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+    TokenPair:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        token_type:
+          type: string
+          example: Bearer
+        expires_in:
+          type: integer
+    IntrospectRequest:
+      type: object
+      properties:
+        token:
+          type: string
+    IntrospectResponse:
+      type: object
+      properties:
+        active:
+          type: boolean
+        sub:
+          type: string
+          description: user_id
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        scopes:
+          type: array
+          items:
+            type: string
+        houses:
+          type: array
+          items:
+            type: string
+            format: uuid
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        name:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+  responses:
+    Unauthorized:
+      description: Требуется аутентификация
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string

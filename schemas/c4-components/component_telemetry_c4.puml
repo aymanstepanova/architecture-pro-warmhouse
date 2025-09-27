@@ -1,0 +1,47 @@
+@startuml
+!include ../styles/C4_Component.puml
+
+title C4 Component Diagram - "Телеметрия"
+
+Component_Ext(apiGw, "API Gateway", "SpringBoot, HTTP", "Единая точка входа для запросов")
+System_Ext(access, "Access System", "Проверка JWT, ролей, прав доступа")
+ComponentQueue_Ext(IoT_bus, "IoT Bus", "Yandex IoT Core", "Метрики с датчиков")
+ComponentQueue_Ext(kafka, "Event Bus", "Apache Kafka", "Транспорт событий устройств")
+
+Container_Boundary(telemetry, "Telemetry") {
+    Component(queryApi, "Telemetry Query API", "Spring Bean\n<<RestController>>", "Выдача метрик (read-only)")
+    Component(queryService, "Telemetry Query Service", "Spring Bean\n<<Service>>", "Проверка прав и выдача метрик")
+
+    Component(repository, "Telemetry Repository", "Spring Bean\n<<Repository>>", "Хранение временных рядов метрик")
+    Component(consumer, "IoT Telemetry Consumer", "Spring Bean\n<<Handler>>", "Подписка на метрики от IoT Bus")
+    Component(processor, "Telemetry Processor", "Spring Bean\n<<Service>>", "Валидация и нормализация метрик")
+    Component(eventConsumer, "Event Consumer", "Spring Bean\n<<Handler>>",  "Подписка на события из Event Bus")
+    Component(eventProcessor, "Event Processor", "Spring Bean\n<<Service>>",  "Обработка событий из Event Bus")
+    Component(policyClient, "Policy Client", "Spring Bean\n<<Component>>", "Запросы на проверку прав к Access Service")
+}
+
+ComponentDb_Ext(telemetryDB, "Telemetry DB", "PostgreSQL", "Хранение временных рядов метрик")
+
+'' Регистрация/удаление датчика
+Rel(kafka, eventConsumer, "Слушает\nDeviceRegistered", "Topic: device.registered.v1")
+Rel(kafka, eventConsumer, "Слушает\nDeviceDeleted", "Topic: device.deleted.v1")
+Rel(eventConsumer, eventProcessor, "Обработка события DeviceRegistered")
+Rel(eventConsumer, eventProcessor, "Обработка события DeviceDeleted")
+Rel(eventProcessor, repository, "Сохранить датчик")
+Rel(eventProcessor, repository, "Удалить датчик")
+
+'' Сохранение метрик
+Rel(IoT_bus, consumer, "Публикует метрики", "MQTT")
+Rel(consumer, processor, "Передаёт сырые данные")
+Rel(processor, repository, "Сохраняет очищенные метрики")
+Rel(repository, telemetryDB, "Хранение датчиков(ссылки) и их метрик", "JDBC")
+
+'' Чтение метрик
+Rel(apiGw, queryApi, "Запрос (HTTP) — метрики для UI", "JSON/HTTPS")
+Rel(queryApi, queryService, "Прорерить права пользователя на просмотр")
+Rel(queryService, policyClient, "Прорерить права пользователя на просмотр")
+Rel(policyClient, access, "Проверить JWT и получить права пользователя (дома и роли в них)", "HTTP")
+Rel(queryService, repository, "SQL read", "JDBC")
+
+
+@enduml

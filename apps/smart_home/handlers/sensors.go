@@ -18,13 +18,15 @@ import (
 type SensorHandler struct {
 	DB                 *db.DB
 	TemperatureService *services.TemperatureService
+	TelemetryService   services.TelemetryService
 }
 
 // NewSensorHandler creates a new SensorHandler
-func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService) *SensorHandler {
+func NewSensorHandler(db *db.DB, temperatureService *services.TemperatureService, telemetryService services.TelemetryService) *SensorHandler {
 	return &SensorHandler{
 		DB:                 db,
 		TemperatureService: temperatureService,
+		TelemetryService:   telemetryService,
 	}
 }
 
@@ -50,20 +52,9 @@ func (h *SensorHandler) GetSensors(c *gin.Context) {
 		return
 	}
 
-	// Update temperature sensors with real-time data from the external API
-	for i, sensor := range sensors {
-		if sensor.Type == models.Temperature {
-			tempData, err := h.TemperatureService.GetTemperatureByID(fmt.Sprintf("%d", sensor.ID))
-			if err == nil {
-				// Update sensor with real-time data
-				sensors[i].Value = tempData.Value
-				sensors[i].Status = tempData.Status
-				sensors[i].LastUpdated = tempData.Timestamp
-				log.Printf("Updated temperature data for sensor %d from external API", sensor.ID)
-			} else {
-				log.Printf("Failed to fetch temperature data for sensor %d: %v", sensor.ID, err)
-			}
-		}
+	// Update sensors with real-time data from external services
+	for i := range sensors {
+		h.updateSensorWithExternalData(&sensors[i])
 	}
 
 	c.JSON(http.StatusOK, sensors)
@@ -83,19 +74,8 @@ func (h *SensorHandler) GetSensorByID(c *gin.Context) {
 		return
 	}
 
-	// If this is a temperature sensor, fetch real-time data from the temperature API
-	if sensor.Type == models.Temperature {
-		tempData, err := h.TemperatureService.GetTemperatureByID(fmt.Sprintf("%d", sensor.ID))
-		if err == nil {
-			// Update sensor with real-time data
-			sensor.Value = tempData.Value
-			sensor.Status = tempData.Status
-			sensor.LastUpdated = tempData.Timestamp
-			log.Printf("Updated temperature data for sensor %d from external API", sensor.ID)
-		} else {
-			log.Printf("Failed to fetch temperature data for sensor %d: %v", sensor.ID, err)
-		}
-	}
+	// Update sensor with real-time data from external services
+	h.updateSensorWithExternalData(&sensor)
 
 	c.JSON(http.StatusOK, sensor)
 }
@@ -136,10 +116,29 @@ func (h *SensorHandler) CreateSensor(c *gin.Context) {
 		return
 	}
 
+	// Создаем датчик в локальной базе данных
 	sensor, err := h.DB.CreateSensor(context.Background(), sensorCreate)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
+	}
+
+	// Создаем датчик в telemetry сервисе (пока синхронно)
+	if h.TelemetryService != nil {
+		telemetryRequest := services.SensorCreateRequest{
+			SensorID:   fmt.Sprintf("%d", sensor.ID), // Используем ID из локальной БД как sensorId
+			SensorType: string(sensor.Type),
+			Unit:       sensor.Unit,
+			Location:   sensor.Location,
+			Name:       sensor.Name,
+		}
+
+		if err := h.TelemetryService.CreateSensor(context.Background(), telemetryRequest); err != nil {
+			log.Printf("Failed to create sensor in telemetry service: %v", err)
+			// Не прерываем выполнение, так как датчик уже создан в локальной БД
+		} else {
+			log.Printf("Successfully created sensor %d in telemetry service", sensor.ID)
+		}
 	}
 
 	c.JSON(http.StatusCreated, sensor)
@@ -210,4 +209,33 @@ func (h *SensorHandler) UpdateSensorValue(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Sensor value updated successfully"})
+}
+
+// updateSensorWithExternalData updates sensor with real-time data from external services
+func (h *SensorHandler) updateSensorWithExternalData(sensor *models.Sensor) {
+	if sensor.Type == models.Temperature {
+		// For temperature sensors, use temperature service
+		tempData, err := h.TemperatureService.GetTemperatureByID(fmt.Sprintf("%d", sensor.ID))
+		if err == nil {
+			sensor.Value = tempData.Value
+			sensor.Status = tempData.Status
+			sensor.LastUpdated = tempData.Timestamp
+			log.Printf("Updated temperature data for sensor %d from temperature API", sensor.ID)
+		} else {
+			log.Printf("Failed to fetch temperature data for sensor %d: %v", sensor.ID, err)
+		}
+	} else {
+		// For non-temperature sensors, use telemetry service
+		if h.TelemetryService != nil {
+			telemetryData, err := h.TelemetryService.GetLatestBySensorExternal(context.Background(), fmt.Sprintf("%d", sensor.ID))
+			if err == nil {
+				sensor.Value = telemetryData.Value
+				sensor.Status = "active" // Telemetry service doesn't provide status, so we set a default
+				sensor.LastUpdated = telemetryData.MeasuredAt
+				log.Printf("Updated sensor %d data from telemetry service", sensor.ID)
+			} else {
+				log.Printf("Failed to fetch telemetry data for sensor %d: %v", sensor.ID, err)
+			}
+		}
+	}
 }

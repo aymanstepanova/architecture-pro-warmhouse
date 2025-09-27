@@ -1,0 +1,118 @@
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+title C4 Component Diagram — Home Container
+
+Boundary(sys, "Система «Тёплый дом»") {
+
+  Person(user, "Пользователь", "Домовладелец / Гость")
+  System_Boundary(gw, "API Gateway") {
+    Component(apiGw, "Gateway", "Spring Cloud / Nginx", "Маршрутизация, аутентификация (JWT passthrough)")
+  }
+
+  ' ==== Home Container ====
+  Container_Boundary(home, "Home Service (Дом)") {
+
+    Component(homeApi, "Home API", "Spring Boot\n<<RestController>>",      "REST фасад: дома, комнаты, участники, приглашения, сцены")
+    Component(homeTopo, "Topology Service", "Spring Bean\n<<Service>>",      "Иерархия: дом → этаж → комната/зона")
+    Component(homeMember, "Membership Service", "Spring Bean\n<<Service>>",      "Владельцы, участники, роли и разрешения")
+    Component(homeInvite, "Invitation Service", "Spring Bean\n<<Service>>",      "Инвайты в дом, подтверждения/истечение")
+    Component(homeScenes, "Scenes Service", "Spring Bean\n<<Service>>",      "Опционально: сценарии дома/комнат")
+    Component(homePolicy, "Policy/ACL", "Spring Bean\n<<Service>>",      "Проверка прав доступа: OWNER/ADMIN/MEMBER/GUEST")
+
+    ComponentDb(homeDb, "Home DB", "PostgreSQL",      "Дом, Комната, Членство, Роль, Инвайт, Сцена")
+
+    ' Интеграции (синхронные вызовы)
+    Component(homeRegClient, "Device Registry Client", "HTTP Client",      "Валидация связки homeId/roomId при привязке устройства")
+    Component(homeMgmtClient, "Device Management Client", "HTTP Client",      "Обогащение ответов (состояние устройств в доме/комнате)")
+  }
+
+  ' ==== External Containers ====
+  Container_Ext(reg, "Device Registry", "Spring Boot", "Паспорт устройств")
+  Container_Ext(mgmt, "Device Management", "Spring Boot", "Desired/Reported/Commands/Audit")
+  Container_Ext(iam, "IAM / Auth", "Keycloak/IdP", "Выдаёт JWT; роли на уровне приложения")
+}
+
+Rel(user, apiGw, "HTTPs / JWT")
+Rel(apiGw, homeApi, "HTTPs / JWT", "REST")
+
+Rel(homeApi, homeTopo, "calls")
+Rel(homeApi, homeMember, "calls")
+Rel(homeApi, homeInvite, "calls")
+Rel(homeApi, homeScenes, "calls", "optional")
+Rel(homeApi, homePolicy, "authz check")
+
+Rel(homeTopo, homeDb, "CRUD", "JPA/SQL")
+Rel(homeMember, homeDb, "CRUD", "JPA/SQL")
+Rel(homeInvite, homeDb, "CRUD", "JPA/SQL")
+Rel(homeScenes, homeDb, "CRUD", "JPA/SQL")
+Rel(homePolicy, homeDb, "read roles")
+
+Rel(homeTopo, homeRegClient, "validate home/room on device link")
+Rel(homeRegClient, reg, "HTTPs", "GET /devices/{id}")
+
+Rel(homeTopo, homeMgmtClient, "enrich room view with state")
+Rel(homeMgmtClient, mgmt, "HTTPs", "GET /devices/{id}/state")
+
+Rel(apiGw, iam, "OIDC", "JWT issuance/validation")
+
+SHOW_LEGEND()
+@enduml
+@startuml
+!include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+title C4 Component Diagram — Home Container
+
+Boundary(sys, "Система «Тёплый дом»") {
+
+  Person(user, "Пользователь", "Домовладелец / Гость")
+  System_Boundary(gw, "API Gateway") {
+    Component(apiGw, "Gateway", "Spring Cloud / Nginx", "Маршрутизация, аутентификация (JWT passthrough)")
+  }
+
+  ' ==== Home Container ====
+  Container_Boundary(home, "Home Service (Дом)") {
+
+    Component(homeApi, "Home API", "Spring Boot\n<<RestController>>", "REST фасад: дома, комнаты, участники, приглашения, сцены")
+    Component(homeTopo, "Topology Service", "Spring Bean\n<<Service>>", "Иерархия: дом → этаж → комната/зона")
+    Component(homeMember, "Membership Service", "Spring Bean\n<<Service>>", "Владельцы, участники, роли и разрешения")
+    Component(homeInvite, "Invitation Service", "Spring Bean\n<<Service>>", "Инвайты в дом, подтверждения/истечение")
+    Component(homeScenes, "Scenes Service", "Spring Bean\n<<Service>>", "Опционально: сценарии дома/комнат")
+    Component(homePolicy, "Policy/ACL", "Spring Bean\n<<Service>>", "Проверка прав доступа: OWNER/ADMIN/MEMBER/GUEST")
+
+    ComponentDb(homeDb, "Home DB", "PostgreSQL",  "Дом, Комната, Членство, Роль, Инвайт, Сцена")
+
+    ' Интеграции (синхронные вызовы)
+    Component(homeRegClient, "Device Registry Client", "HTTP Client", "Валидация связки homeId/roomId при привязке устройства")
+    Component(homeMgmtClient, "Device Management Client", "HTTP Client", "Обогащение ответов (состояние устройств в доме/комнате)")
+  }
+
+  ' ==== External Containers ====
+  Container_Ext(reg, "Device Registry", "Spring Boot", "Паспорт устройств")
+  Container_Ext(mgmt, "Device Management", "Spring Boot", "Desired/Reported/Commands/Audit")
+  Container_Ext(iam, "IAM / Auth", "Keycloak/IdP", "Выдаёт JWT; роли на уровне приложения")
+}
+
+Rel(user, apiGw, "HTTPs / JWT")
+Rel(apiGw, homeApi, "HTTPs / JWT", "REST")
+
+Rel(homeApi, homeTopo, "calls")
+Rel(homeApi, homeMember, "calls")
+Rel(homeApi, homeInvite, "calls")
+Rel(homeApi, homeScenes, "calls", "optional")
+Rel(homeApi, homePolicy, "authz check")
+
+Rel(homeTopo, homeDb, "CRUD", "JPA/SQL")
+Rel(homeMember, homeDb, "CRUD", "JPA/SQL")
+Rel(homeInvite, homeDb, "CRUD", "JPA/SQL")
+Rel(homeScenes, homeDb, "CRUD", "JPA/SQL")
+Rel(homePolicy, homeDb, "read roles")
+
+Rel(homeTopo, homeRegClient, "validate home/room on device link")
+Rel(homeRegClient, reg, "HTTPs", "GET /devices/{id}")
+
+Rel(homeTopo, homeMgmtClient, "enrich room view with state")
+Rel(homeMgmtClient, mgmt, "HTTPs", "GET /devices/{id}/state")
+
+Rel(apiGw, iam, "OIDC", "JWT issuance/validation")
+
+SHOW_LEGEND()
+@enduml
