@@ -40,6 +40,11 @@ func main() {
 	}
 	log.Printf("Telemetry service initialized with API URL: %s\n", telemetryAPIURL)
 
+	// Initialize device management service
+	deviceManagementAPIURL := getEnv("DEVICE_MANAGEMENT_API_URL", "http://device-management:8083")
+	deviceManagementService := services.NewDeviceManagementService(deviceManagementAPIURL)
+	log.Printf("Device management service initialized with API URL: %s\n", deviceManagementAPIURL)
+
 	// Initialize router
 	router := gin.Default()
 
@@ -56,6 +61,10 @@ func main() {
 	// Register sensor routes
 	sensorHandler := handlers.NewSensorHandler(database, temperatureService, telemetryService)
 	sensorHandler.RegisterRoutes(apiRoutes)
+
+	// Register device routes (API Gateway)
+	deviceHandler := handlers.NewDeviceHandler(deviceManagementService)
+	deviceHandler.RegisterRoutes(apiRoutes)
 
 	// Start server
 	srv := &http.Server{
