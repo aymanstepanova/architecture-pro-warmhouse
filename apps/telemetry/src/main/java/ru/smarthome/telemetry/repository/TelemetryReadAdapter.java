@@ -22,13 +22,15 @@ public class TelemetryReadAdapter implements TelemetryReadRepository {
     }
 
     @Override
-    public List<MetricDto> findLatestByLocationAndMetric(String location, String metricCode) {
+    public List<MetricDto> findLatestByLocationAndMetric(String houseId,
+                                                         String location,
+                                                         String metricCode) {
         String sql = 
             """
             WITH filtered_sensors AS (
               SELECT id, sensor_id, sensor_type, unit, location
               FROM telemetry.sensors
-              WHERE (:location IS NULL OR location = :location)
+              WHERE (:location IS NULL OR location = :location) and house_id = :houseId
             ),
             last_points AS (
               SELECT td.sensor_id, td.sensor_value, td.value_json, td.metric_code, td.measured_at,
@@ -47,6 +49,7 @@ public class TelemetryReadAdapter implements TelemetryReadRepository {
 
         var params = new MapSqlParameterSource()
                 .addValue("location", location)
+                .addValue("houseId", UUID.fromString(houseId))
                 .addValue("metricCode", metricCode);
 
         return jdbcTemplate.query(sql, params, (rs, rn) -> new MetricDto(

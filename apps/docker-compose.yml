@@ -61,9 +61,53 @@ services:
     restart: unless-stopped
     networks:
       - smarthome-network
+  telemetry-postgres:
+    image: postgres:16-alpine
+    container_name: telemetry-postgres
+    environment:
+      - POSTGRES_USER=telemetry
+      - POSTGRES_PASSWORD=telemetry
+    volumes:
+      - telemetry_pg_data:/var/lib/postgresql/data
+      - ./telemetry/db/init.sql:/docker-entrypoint-initdb.d/001_init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d telemetry" ]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+    networks:
+      - smarthome-network
+  # расскомментировать, чтобы подключиться локально к БД по порту 15432
+    ports:
+      - "15432:5432"
+  telemetry-service:
+    build:
+      context: ./telemetry
+      dockerfile: Dockerfile
+    image: telemetry:0.1.0
+    container_name: telemetry-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://telemetry-postgres:5432/telemetry
+      - SPRING_DATASOURCE_USERNAME=telemetry
+      - SPRING_DATASOURCE_PASSWORD=telemetry
+    healthcheck:
+      test: curl --fail -s http://localhost:8082/actuator/health
+      interval: 30s
+      timeout: 10s
+      start_period: 20s
+      retries: 6
+    depends_on:
+      telemetry-postgres:
+        condition: service_healthy
+    ports:
+      - "8082:8082"
+    networks:
+      - smarthome-network
 
 volumes:
   postgres_data:
+  telemetry_pg_data:
 
 networks:
   smarthome-network:

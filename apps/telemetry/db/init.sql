@@ -20,8 +20,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- =========================================================
 CREATE TABLE IF NOT EXISTS telemetry.sensors (
     id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),          -- внутр. PK
+    house_id        UUID NOT NULL,                                        -- внешний ID дома (таблица houses в БД SpacesService)
     sensor_id       TEXT NOT NULL UNIQUE,                                 -- внешний ID датчика (таблица sensors в БД монолита)
-    device_id       TEXT,                                                 -- внешний ID устройства
+    device_id       TEXT,                                                 -- внешний ID устройства (таблица devices в БД DeviceRegistry)
     sensor_type     TEXT NOT NULL,                                        -- тип датчика (например, temperature, humidity, power)
     unit            TEXT NOT NULL,                                        -- единица измерения (например, C, %, W)
     location        TEXT,                                                 -- произвольная локация/комната/зона
@@ -34,8 +35,9 @@ COMMENT ON TABLE telemetry.sensors IS
     'Реестр датчиков телеметрии. Хранит данные по каждому датчику.';
 
 COMMENT ON COLUMN telemetry.sensors.id            IS 'Внутренний UUID первичный ключ датчика.';
-COMMENT ON COLUMN telemetry.sensors.sensor_id     IS 'Внешний уникальный идентификатор датчика, известный другим системам (монолит, устройство). Уникален.';
-COMMENT ON COLUMN telemetry.sensors.device_id     IS 'Идентификатор связанного устройства (м.б. ссылка на devices?)';
+COMMENT ON COLUMN telemetry.sensors.house_id      IS 'Внешний ID дома (таблица houses в БД SpacesService)';
+COMMENT ON COLUMN telemetry.sensors.sensor_id     IS 'Внешний уникальный ID датчика, известный другим системам (монолит, устройство). Уникален.';
+COMMENT ON COLUMN telemetry.sensors.device_id     IS 'Внешний ID связанного устройства (м.б. ссылка на devices?)';
 COMMENT ON COLUMN telemetry.sensors.sensor_type   IS 'Тип датчика: temperature, humidity, power и т.д. ';
 COMMENT ON COLUMN telemetry.sensors.unit          IS 'Единицы измерения значения: например, C (градусы Цельсия), %, W.';
 COMMENT ON COLUMN telemetry.sensors.location      IS 'Человекочитаемая локация/комната/зона, где установлен датчик.';
@@ -68,20 +70,20 @@ FOR EACH ROW EXECUTE FUNCTION telemetry.set_updated_at();
 -- ---------------------------------------------------------
 -- Назначение:
 --  - хранит все поступающие измерения,
---  - минимальный состав: sensor_id, ts, value,
+--  - минимальный состав: sensor_id, measured_at, sensor_value,
 --  - качество и источник для дебага/фильтрации.
 -- Примечание:
 --  - Для больших объёмов позже можно включить партиционирование по partition_ym (месяц/день) и удаление старых партиций по расписанию
 -- =========================================================
 CREATE TABLE IF NOT EXISTS telemetry.telemetry_data (
-    id              BIGSERIAL PRIMARY KEY,                                -- суррогатный PK для быстрой вставки
+    id              BIGSERIAL,                                            -- суррогатный ключ
     sensor_id       UUID NOT NULL REFERENCES telemetry.sensors(id) ON DELETE CASCADE,
     sensor_value    NUMERIC(18,6) NOT NULL,                               -- значение измерения
     metric_code     TEXT NOT NULL,                                        -- код метрики (например, temperature).
     value_json      JSONB NOT NULL,                                       -- гибкая форма значения (JSON)
-    measured_at     TIMESTAMPTZ NOT NULL,                                -- время измерения
+    measured_at     TIMESTAMPTZ NOT NULL,                                 -- время измерения
     received_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),                   -- когда попало в БД (может отличаться от времени измерения из-за отставания)
-    UNIQUE(sensor_id, measured_at)                                        -- защита от дублей по ключу (датчик+время)
+    CONSTRAINT telemetry_data_pk PRIMARY KEY (sensor_id, measured_at)
 ) PARTITION BY RANGE (measured_at);
 
 

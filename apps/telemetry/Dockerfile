@@ -6,6 +6,6 @@ RUN mvn -q -DskipTests clean package
 
 FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
-COPY --from=build /src/target/telemetry-api-*.jar app.jar
+COPY --from=build /src/target/telemetry-*.jar app.jar
 EXPOSE 8082
 ENTRYPOINT ["java","-jar","/app/app.jar"]

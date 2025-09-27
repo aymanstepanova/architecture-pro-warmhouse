@@ -1,8 +1,8 @@
--- два сенсора "в спальне"
-INSERT INTO telemetry.sensors (id, sensor_id, sensor_type, unit, location)
+-- два сенсора "в спальне" одного дома
+INSERT INTO telemetry.sensors (id, house_id, sensor_id, sensor_type, unit, location)
 VALUES
-  ('00000000-0000-0000-0000-000000000001', 'ext-hum-1', 'humidity', '%', 'Living Room'),
-  ('00000000-0000-0000-0000-000000000002', 'ext-temp-1', 'temperature', 'C', 'Living Room');
+  ('00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', 'ext-hum-1', 'humidity', '%', 'Living Room'),
+  ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000001', 'ext-temp-1', 'temperature', 'C', 'Living Room');
 
 -- отметим по два измерения на каждый, у humidity последнее новее
 INSERT INTO telemetry.telemetry_data (sensor_id, sensor_value, metric_code, value_json, measured_at, received_at)

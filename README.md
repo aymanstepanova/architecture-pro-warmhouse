@@ -65,14 +65,16 @@
 
 # Задание 2. Проектирование микросервисной архитектуры
 
-
 - [Диаграмма контейнеров Containers](./schemas/container_c4_to_be.puml)
 
-**Диаграмма компонентов (Components)**
+## Диаграмма компонентов (Components)**
 
-- [Диаграмма компонентов контейнера DeviceManagement](schemas/c4-components/component_device_management_c4.puml)
-- [Диаграмма компонентов контейнера Device Registry](schemas/c4-components/component_device_registry_c4.puml)
-- [Диаграмма компонентов контейнера Telemetry](schemas/c4-components/component_telemetry_c4.puml)
+**Контейнеры**:
+- [DeviceManagement](schemas/c4-components/component_device_management_c4.puml)
+- [Device Registry](schemas/c4-components/component_device_registry_c4.puml)
+- [Telemetry](schemas/c4-components/component_telemetry_c4.puml)
+- [Access Service](schemas/c4-components/component_access_c4.puml)
+- [Spaces Registry](schemas/c4-components/component_spaces_c4.puml)
 
 **Диаграмма кода (Code)**
 
@@ -94,7 +96,7 @@
 
 ### 1. Тип API
 
-Укажите, какой тип API вы будете использовать для взаимодействия микросервисов. Объясните своё решение.
+Мы используем синхронный HTTP API (REST) между компонентами, где критична простота интеграции и предсказуемость ответов (например, чтение текущей температуры, CRUD устройств). Для обмена событиями в перспективе (например, изменение состояния устройства) предусмотрен асинхронный канал через брокер сообщений, но в MVP остаёмся на REST. 
 
 ### 2. Документация API
 

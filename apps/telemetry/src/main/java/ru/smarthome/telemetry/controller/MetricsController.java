@@ -20,12 +20,13 @@ public class MetricsController {
     }
 
     // Базовый сценарий:
-    // GET /metrics?location=Living Room&metric_code=humidity
+    // GET /metrics?house_id=uuid&location=Living Room&metric_code=humidity
     @GetMapping
     public List<MetricDto> byLocationAndMetric(
+            @RequestParam(name = "house_id") @Size(max = 128) String houseId,
             @RequestParam(name = "location", required = false) @Size(max = 128) String location,
             @RequestParam(name = "metric_code", required = false) @Size(max = 64) String metricCode) {
-        return service.findLatestByLocationAndMetric(location, metricCode);
+        return service.findLatestByLocationAndMetric(houseId, location, metricCode);
     }
 
     // Вторичный сценарий:

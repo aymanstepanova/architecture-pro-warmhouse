@@ -6,6 +6,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MetricsQueryService {
-    List<MetricDto> findLatestByLocationAndMetric(String location, String metricCode);
+    List<MetricDto> findLatestByLocationAndMetric(String houseId, String location, String metricCode);
     Optional<MetricDto> findLatestBySensor(String sensorId, boolean useExternalId);
 }

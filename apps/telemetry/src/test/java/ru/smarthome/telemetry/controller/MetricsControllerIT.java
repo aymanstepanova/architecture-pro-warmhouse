@@ -1,7 +1,6 @@
 package ru.smarthome.telemetry.controller;
 
 
-import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.jdbc.Sql;
 import ru.smarthome.telemetry.it.PostgresIntegrationTest;
 import ru.smarthome.telemetry.model.MetricDto;
@@ -25,9 +24,9 @@ class MetricsControllerIT extends PostgresIntegrationTest {
 
     @Test
     void getByLocationAndMetric_returnsLatestPerSensor() {
-        // when
-        ResponseEntity<MetricDto[]> response = rest.getForEntity(
-                "/metrics?location=Living Room&metric_code=humidity", MetricDto[].class);
+        String houseId = "00000000-0000-0000-0000-000000000001"; // дом
+        String url = "/metrics?location=Living Room&metric_code=humidity&house_id=%s".formatted(houseId);
+        ResponseEntity<MetricDto[]> response = rest.getForEntity(url, MetricDto[].class);
 
         // then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -69,5 +68,14 @@ class MetricsControllerIT extends PostgresIntegrationTest {
         assertThat(metricDto).isNotNull();
         assertThat(metricDto.metricCode()).isEqualTo(HUMIDITY.getCode());
         assertThat(metricDto.value()).isEqualByComparingTo(new BigDecimal("47.5"));
+    }
+
+
+    @Test
+    void badRequest() {
+        String url = "/metrics?location=Living Room&metric_code=humidity&house_id=%s".formatted(1);
+        ResponseEntity<ProblemDetail> response = rest.getForEntity(url, ProblemDetail.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }

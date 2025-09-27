@@ -1,7 +1,6 @@
 package ru.smarthome.telemetry.service;
 
 
-import lombok.RequiredArgsConstructor;
 import ru.smarthome.telemetry.model.MetricDto;
 import ru.smarthome.telemetry.repository.TelemetryReadRepository;
 import org.springframework.stereotype.Service;
@@ -19,8 +18,8 @@ public class MetricsQueryServiceImpl implements MetricsQueryService {
     }
 
     @Override
-    public List<MetricDto> findLatestByLocationAndMetric(String location, String metricCode) {
-        return telemetryReadRepository.findLatestByLocationAndMetric(location, metricCode);
+    public List<MetricDto> findLatestByLocationAndMetric(String houseId, String location, String metricCode) {
+        return telemetryReadRepository.findLatestByLocationAndMetric(houseId, location, metricCode);
     }
 
     @Override
