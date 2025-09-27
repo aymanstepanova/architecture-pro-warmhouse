@@ -110,6 +110,7 @@ entity "telemetry_data" as TLM {
   * id: BIGSERIAL <<PK>>
   --
   device_id: UUID <<FK devices.id>>
+  sensor_id: UUID <<FK sensors.id>>
   metric_code: TEXT     ' примеры: temp, humidity, power, motion
   value_json: JSONB     ' значение/объект
   partition_ym: TEXT    ' YYYY-MM для партиционирования
